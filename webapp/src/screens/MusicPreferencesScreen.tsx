@@ -223,8 +223,9 @@ const MusicPreferencesScreen: React.FC = () => {
           <div className="p-4 border-b border-gray-800">
             <div className="flex items-center gap-2 mb-3">
               <User className="w-5 h-5 text-gray-300" />
-              <h2 className="text-lg font-semibold text-white">
-                Top 3 Favorite Artists
+              <h2 className="text-2xl font-semibold text-white flex items-center gap-3">
+                Artists
+                <span className="text-xs font-normal text-gray-400">Select 3</span>
               </h2>
             </div>
             <div className="relative">
@@ -251,10 +252,10 @@ const MusicPreferencesScreen: React.FC = () => {
                     onClick={() => canSelect && handleArtistSelect(artist)}
                     className={`relative p-3 rounded-lg border cursor-pointer transition-all snap-start min-w-[120px] ${
                       selected
-                        ? 'border-green-500 bg-green-50'
+                        ? 'border-green-500 bg-green-500/10'
                         : canSelect
-                          ? 'border-gray-200 bg-white hover:border-gray-300'
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
+                          ? 'border-gray-800 bg-gray-900 hover:border-gray-700'
+                          : 'border-gray-800 bg-gray-900 cursor-not-allowed opacity-50'
                     }`}
                   >
                     {selected && (
@@ -280,8 +281,9 @@ const MusicPreferencesScreen: React.FC = () => {
           <div className="p-4 border-b border-gray-800 bg-black">
             <div className="flex items-center gap-2 mb-3">
               <Music className="w-5 h-5 text-gray-300" />
-              <h2 className="text-lg font-semibold text-white">
-                Top 5 Favorite Songs
+              <h2 className="text-2xl font-semibold text-white flex items-center gap-3">
+                Songs
+                <span className="text-xs font-normal text-gray-400">Select 5</span>
               </h2>
             </div>
             <div className="relative">
@@ -299,22 +301,22 @@ const MusicPreferencesScreen: React.FC = () => {
           <div className="p-4 h-full overflow-y-auto">
             <div className="space-y-3">
               {filteredSongs.map((song) => {
-                const isSelected = selectedSongs.find(s => s.id === song.id);
-                const canSelect = selectedSongs.length < 5;
+                const selected = selectedSongs.some(s => s.id === song.id);
+                const canSelect = selectedSongs.length < 5 || selected;
                 
                 return (
                   <div
                     key={song.id}
-                    onClick={() => handleSongSelect(song)}
+                    onClick={() => canSelect && handleSongSelect(song)}
                     className={`relative flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                      isSelected 
-                        ? 'border-green-500 bg-green-50' 
+                      selected 
+                        ? 'border-green-500 bg-green-500/10' 
                         : canSelect
-                          ? 'border-gray-200 bg-white hover:border-gray-300'
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
+                          ? 'border-gray-800 bg-gray-900 hover:border-gray-700'
+                          : 'border-gray-800 bg-gray-900 cursor-not-allowed opacity-50'
                     }`}
                   >
-                    {isSelected && (
+                    {selected && (
                       <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
                       </div>
@@ -363,7 +365,10 @@ const MusicPreferencesScreen: React.FC = () => {
                           >
                             <X className="w-4 h-4" />
                           </button>
-                          <span className="px-2 text-sm truncate">{a.name}</span>
+                          <div className="flex items-center gap-2 px-2">
+                            <img src={a.image || '/placeholder-artist.svg'} alt={a.name} className="w-8 h-8 rounded object-cover" />
+                            <span className="text-sm truncate text-white">{a.name}</span>
+                          </div>
                         </>
                       ) : (
                         <span className="text-xs text-gray-500">Empty</span>
@@ -391,7 +396,10 @@ const MusicPreferencesScreen: React.FC = () => {
                           >
                             <X className="w-4 h-4" />
                           </button>
-                          <span className="px-2 text-xs truncate text-center">{s.title}</span>
+                          <div className="flex items-center gap-2 px-2">
+                            <img src={s.image || '/placeholder-artist.svg'} alt={s.title} className="w-8 h-8 rounded object-cover" />
+                            <span className="text-xs truncate text-white">{s.title}</span>
+                          </div>
                         </>
                       ) : (
                         <span className="text-xs text-gray-500">Empty</span>
