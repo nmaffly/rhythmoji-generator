@@ -97,9 +97,9 @@ def generate_rhythmoji(base_image_path, artists, songs, animal=None):
             model=os.getenv("OPENAI_IMAGE_MODEL", "dall-e-3"),
             prompt=prompt,
             size="1024x1024",
-            quality="high",
-            n=1,
+            quality="hd",  # 'standard' or 'hd' are valid
             style="vivid",
+            response_format="b64_json",
         )
 
         if result.data and len(result.data) > 0:
