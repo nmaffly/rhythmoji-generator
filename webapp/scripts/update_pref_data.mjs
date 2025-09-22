@@ -123,7 +123,43 @@ async function updateAppleTopSongs() {
     image: r.artworkUrl100?.replace(/100x100bb\.jpg$/, '200x200bb.jpg') || r.artworkUrl100 || null,
     url: r.url
   }));
-  const topSongs = { source: 'apple_music_rss', country: 'us', updated_at: nowIso(), songs };
+  // Enrich with album info via iTunes Lookup (batch by ids)
+  const ids = songs.map(s => s.id).filter(Boolean);
+  const lookupUrl = new URL('https://itunes.apple.com/lookup');
+  lookupUrl.searchParams.set('id', ids.join(','));
+  lookupUrl.searchParams.set('country', 'us');
+  let byId = new Map();
+  try {
+    const lookup = await fetchJson(lookupUrl.toString());
+    const items = lookup?.results || [];
+    for (const it of items) {
+      const tid = String(it.trackId || it.collectionId || '');
+      if (tid) byId.set(tid, {
+        albumId: it.collectionId || null,
+        album: it.collectionName || null,
+        primaryArtist: it.artistName || null,
+      });
+    }
+  } catch {}
+  const songsEnriched = songs.map(s => {
+    const extra = byId.get(String(s.id)) || {};
+    return { ...s, albumId: extra.albumId || null, album: extra.album || null, primaryArtist: extra.primaryArtist || s.artist };
+  });
+
+  // Enforce album uniqueness per primary artist (no multiple songs from same album per artist)
+  const artistAlbumSeen = new Map(); // artistKey -> Set(albumKey)
+  const uniqueSongs = [];
+  for (const s of songsEnriched) {
+    const artistKey = (s.primaryArtist || s.artist || '').toLowerCase();
+    const albumKey = s.albumId ? `id:${s.albumId}` : (s.album ? `name:${String(s.album).toLowerCase()}` : null);
+    if (!artistAlbumSeen.has(artistKey)) artistAlbumSeen.set(artistKey, new Set());
+    const seenSet = artistAlbumSeen.get(artistKey);
+    const key = albumKey || `track:${s.id}`;
+    if (seenSet.has(key)) continue;
+    seenSet.add(key);
+    uniqueSongs.push(s);
+  }
+  const topSongs = { source: 'apple_music_rss', country: 'us', updated_at: nowIso(), songs: uniqueSongs };
   await fs.writeFile(path.join(OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs, null, 2));
   await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs));
 
@@ -131,7 +167,7 @@ async function updateAppleTopSongs() {
   const artistOrder = [];
   const displayName = new Map(); // norm -> display string
   const artistImage = new Map(); // norm -> image url
-  for (const s of songs) {
+  for (const s of uniqueSongs) {
     const credits = splitArtistCredits(s.artist);
     for (const c of credits) {
       const nameDisp = normalizeArtistName(c);
