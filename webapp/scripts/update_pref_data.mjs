@@ -28,6 +28,49 @@ async function fetchJson(url, opts = {}) {
   return res.json();
 }
 
+// --- Wikidata lightweight fallback for artist image (P18) ---
+function commonsFromFileName(fileName, width = 256) {
+  if (!fileName) return null;
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}?width=${width}`;
+}
+
+async function wikidataImageForName(name) {
+  try {
+    const searchUrl = new URL('https://www.wikidata.org/w/api.php');
+    searchUrl.searchParams.set('action', 'wbsearchentities');
+    searchUrl.searchParams.set('search', name);
+    searchUrl.searchParams.set('language', 'en');
+    searchUrl.searchParams.set('format', 'json');
+    searchUrl.searchParams.set('limit', '1');
+    const s = await fetchJson(searchUrl.toString());
+    const id = s?.search?.[0]?.id;
+    if (!id) return null;
+    const entityUrl = new URL('https://www.wikidata.org/w/api.php');
+    entityUrl.searchParams.set('action', 'wbgetentities');
+    entityUrl.searchParams.set('ids', id);
+    entityUrl.searchParams.set('props', 'claims');
+    entityUrl.searchParams.set('format', 'json');
+    const e = await fetchJson(entityUrl.toString());
+    const claims = e?.entities?.[id]?.claims || {};
+    const p18 = claims.P18?.[0]?.mainsnak?.datavalue?.value; // filename
+    return commonsFromFileName(p18) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function enrichTopArtistImagesWikidata(artists) {
+  const enriched = [];
+  for (const a of artists) {
+    if (a.image_url) { enriched.push(a); continue; }
+    const img = await wikidataImageForName(a.name);
+    enriched.push({ ...a, image_url: img || null });
+    // brief pause to be polite
+    await new Promise(r => setTimeout(r, 300));
+  }
+  return enriched;
+}
+
 function splitArtistCredits(raw) {
   if (!raw) return [];
   let s = String(raw);
@@ -83,8 +126,9 @@ async function updateAppleTopSongs() {
     }
   }
 
-  // Top 10 unique artists
-  const artists10 = allArtists.slice(0, 10);
+  // Top 10 unique artists; then try to enrich missing images from Wikidata
+  let artists10 = allArtists.slice(0, 10);
+  artists10 = await enrichTopArtistImagesWikidata(artists10);
   const topArtists = { source: 'apple_music_rss', country: 'us', updated_at: nowIso(), artists: artists10 };
   await fs.writeFile(path.join(OUT_DIR, 'top_artists_us.json'), JSON.stringify(topArtists, null, 2));
   await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'top_artists_us.json'), JSON.stringify(topArtists));
@@ -93,6 +137,41 @@ async function updateAppleTopSongs() {
   const catalog = { source: 'apple_music_rss', updated_at: nowIso(), count: Math.min(allArtists.length, 300), artists: allArtists.slice(0, 300) };
   await fs.writeFile(path.join(OUT_DIR, 'artists_catalog.json'), JSON.stringify(catalog, null, 2));
   await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'artists_catalog.json'), JSON.stringify(catalog));
+}
+
+// Build a larger local songs catalog via iTunes Search (no auth)
+async function buildSongsCatalogFromItunes(maxPerSeed = 200, seeds = 'abcdefghijklmnopqrstuvwxyz0123456789') {
+  const seen = new Set();
+  const out = [];
+  for (const ch of seeds) {
+    const url = new URL('https://itunes.apple.com/search');
+    url.searchParams.set('term', ch);
+    url.searchParams.set('entity', 'song');
+    url.searchParams.set('country', 'us');
+    url.searchParams.set('limit', String(maxPerSeed));
+    try {
+      const json = await fetchJson(url.toString());
+      const items = json?.results || [];
+      for (const r of items) {
+        const id = r.trackId || r.collectionId || r.artistId || r.trackViewUrl;
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        out.push({
+          id: String(id),
+          title: r.trackName || r.collectionName || r.trackCensoredName,
+          artist: r.artistName,
+          image: (r.artworkUrl100 || '').replace(/100x100bb\.jpg$/, '200x200bb.jpg') || r.artworkUrl100 || null,
+          url: r.trackViewUrl || r.collectionViewUrl || null
+        });
+      }
+    } catch {
+      // skip on errors per seed
+    }
+    await new Promise(r => setTimeout(r, 200));
+  }
+  const catalog = { source: 'itunes_search', country: 'us', updated_at: nowIso(), count: out.length, songs: out };
+  await fs.writeFile(path.join(OUT_DIR, 'songs_catalog.json'), JSON.stringify(catalog, null, 2));
+  await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'songs_catalog.json'), JSON.stringify(catalog));
 }
 
 function wikidataSparql(limit = 5000, offset = 0) {
@@ -173,10 +252,12 @@ async function main() {
   const mode = process.argv[2] || 'all';
   if (mode === 'apple') {
     await updateAppleTopSongs();
+    await buildSongsCatalogFromItunes();
   } else if (mode === 'wikidata') {
     await updateWikidataCatalog();
   } else {
     await updateAppleTopSongs();
+    await buildSongsCatalogFromItunes();
     await updateWikidataCatalog();
   }
   console.log('pref_data updated in', OUT_DIR, 'and copied to', PUBLIC_OUT_DIR);

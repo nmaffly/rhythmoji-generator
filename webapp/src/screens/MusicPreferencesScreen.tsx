@@ -15,6 +15,7 @@ const MusicPreferencesScreen: React.FC = () => {
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
   const [artistsCatalog, setArtistsCatalog] = useState<Artist[]>([]);
   const [songs, setSongs] = useState<Song[]>([]);
+  const [songsCatalog, setSongsCatalog] = useState<Song[]>([]);
   const [filteredArtists, setFilteredArtists] = useState<Artist[]>([]);
   const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,10 +27,11 @@ const MusicPreferencesScreen: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [songsRes, artistsRes, catalogRes] = await Promise.all([
+        const [songsRes, artistsRes, catalogRes, songsCatRes] = await Promise.all([
           fetch('/pref_data/top_songs_us.json').catch(() => null),
           fetch('/pref_data/top_artists_us.json').catch(() => null),
           fetch('/pref_data/artists_catalog.json').catch(() => null),
+          fetch('/pref_data/songs_catalog.json').catch(() => null),
         ]);
 
         if (songsRes && songsRes.ok) {
@@ -47,11 +49,22 @@ const MusicPreferencesScreen: React.FC = () => {
 
         if (artistsRes && artistsRes.ok) {
           const json = await artistsRes.json();
-          const mapped: Artist[] = (json?.artists || []).map((a: any, idx: number) => ({
+          const arr: Artist[] = (json?.artists || []).map((a: any, idx: number) => ({
             id: String(a.id ?? idx),
             name: a.name,
             image: a.image_url || undefined,
           }));
+          // de-dup by normalized name and cap to 10 just in case
+          const seen = new Set<string>();
+          const mapped: Artist[] = [];
+          for (const a of arr) {
+            const key = a.name?.trim().toLowerCase();
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              mapped.push(a);
+            }
+            if (mapped.length >= 10) break;
+          }
           setTopArtists(mapped);
           setFilteredArtists(mapped);
         }
@@ -65,6 +78,17 @@ const MusicPreferencesScreen: React.FC = () => {
             aliases: a.aliases || [],
           }));
           setArtistsCatalog(mapped);
+        }
+
+        if (songsCatRes && songsCatRes.ok) {
+          const json = await songsCatRes.json();
+          const cat: Song[] = (json?.songs || []).map((s: any, idx: number) => ({
+            id: String(s.id ?? idx),
+            title: s.title ?? s.trackName ?? s.name,
+            artist: s.artist ?? s.artistName,
+            image: s.image ?? s.artworkUrl100 ?? s.artworkUrl,
+          }));
+          setSongsCatalog(cat);
         }
       } catch (e) {
         // If anything fails, the UI will fall back to empty lists
@@ -91,12 +115,17 @@ const MusicPreferencesScreen: React.FC = () => {
 
   useEffect(() => {
     const q = songSearch.trim().toLowerCase();
-    const filtered = songs.filter(song =>
+    if (!q) {
+      setFilteredSongs(songs);
+      return;
+    }
+    const src = songsCatalog.length > 0 ? songsCatalog : songs;
+    const filtered = src.filter(song =>
       (song.title || '').toLowerCase().includes(q) ||
       (song.artist || '').toLowerCase().includes(q)
-    );
+    ).slice(0, 200);
     setFilteredSongs(filtered);
-  }, [songSearch, songs]);
+  }, [songSearch, songs, songsCatalog]);
 
   const handleArtistSelect = (artist: any) => {
     if (selectedArtists.find(a => a.id === artist.id)) {
@@ -182,17 +211,20 @@ const MusicPreferencesScreen: React.FC = () => {
             </div>
           </div>
           
-          <div className="p-4 h-full overflow-y-auto">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="p-4 h-full overflow-y-hidden overflow-x-auto">
+            <div className="flex gap-3 pr-4 snap-x snap-mandatory">
               {filteredArtists.map((artist) => {
                 const isSelected = selectedArtists.find(a => a.id === artist.id);
                 const canSelect = selectedArtists.length < 3;
-                
+                // image fallback: if artist.image missing, try first song that mentions this artist
+                const lower = artist.name?.toLowerCase() || '';
+                const songMatch = songs.find(s => (s.artist || '').toLowerCase().includes(lower));
+                const imgSrc = artist.image || songMatch?.image || '/placeholder-artist.svg';
                 return (
                   <div
                     key={artist.id}
                     onClick={() => handleArtistSelect(artist)}
-                    className={`relative p-3 rounded-lg border cursor-pointer transition-all ${
+                    className={`relative p-3 rounded-lg border cursor-pointer transition-all snap-start min-w-[120px] ${
                       isSelected 
                         ? 'border-green-500 bg-green-50' 
                         : canSelect
@@ -206,12 +238,12 @@ const MusicPreferencesScreen: React.FC = () => {
                       </div>
                     )}
                     <img
-                      src={artist.image}
+                      src={imgSrc}
                       alt={artist.name}
-                      className="w-full h-20 object-cover rounded-lg mb-2"
+                      className="w-24 h-24 object-cover rounded-lg mb-2"
                     />
                     <h3 className="font-medium text-sm text-gray-900 truncate">{artist.name}</h3>
-                    <p className="text-xs text-gray-600">{artist.genre}</p>
+                    {/* optional genre placeholder removed for simplicity */}
                   </div>
                 );
               })}
