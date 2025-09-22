@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pref:update": "node scripts/update_pref_data.mjs",
+    "pref:apple": "node scripts/update_pref_data.mjs apple",
+    "pref:wikidata": "node scripts/update_pref_data.mjs wikidata"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

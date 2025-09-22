@@ -4,51 +4,99 @@ import { useAuth } from '../contexts/AuthContext';
 import { Search, Music, User, Check, X, ArrowRight } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-// Mock data for demonstration
-const mockArtists = [
-  { id: '1', name: 'Taylor Swift', image: 'https://images.pexels.com/photos/1587927/pexels-photo-1587927.jpeg?auto=compress&cs=tinysrgb&w=150', genre: 'Pop' },
-  { id: '2', name: 'Drake', image: 'https://images.pexels.com/photos/1762578/pexels-photo-1762578.jpeg?auto=compress&cs=tinysrgb&w=150', genre: 'Hip-Hop' },
-  { id: '3', name: 'Billie Eilish', image: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg?auto=compress&cs=tinysrgb&w=150', genre: 'Alternative' },
-  { id: '4', name: 'Ed Sheeran', image: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=150', genre: 'Pop' },
-  { id: '5', name: 'The Weeknd', image: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg?auto=compress&cs=tinysrgb&w=150', genre: 'R&B' },
-  { id: '6', name: 'Ariana Grande', image: 'https://images.pexels.com/photos/1587927/pexels-photo-1587927.jpeg?auto=compress&cs=tinysrgb&w=150', genre: 'Pop' },
-];
-
-const mockSongs = [
-  { id: '1', title: 'Blinding Lights', artist: 'The Weeknd', image: 'https://images.pexels.com/photos/164962/pexels-photo-164962.jpeg?auto=compress&cs=tinysrgb&w=150', duration: '3:20' },
-  { id: '2', title: 'Shape of You', artist: 'Ed Sheeran', image: 'https://images.pexels.com/photos/167636/pexels-photo-167636.jpeg?auto=compress&cs=tinysrgb&w=150', duration: '3:53' },
-  { id: '3', title: 'Bad Guy', artist: 'Billie Eilish', image: 'https://images.pexels.com/photos/164821/pexels-photo-164821.jpeg?auto=compress&cs=tinysrgb&w=150', duration: '3:14' },
-  { id: '4', title: 'Anti-Hero', artist: 'Taylor Swift', image: 'https://images.pexels.com/photos/164829/pexels-photo-164829.jpeg?auto=compress&cs=tinysrgb&w=150', duration: '3:20' },
-  { id: '5', title: 'As It Was', artist: 'Harry Styles', image: 'https://images.pexels.com/photos/164962/pexels-photo-164962.jpeg?auto=compress&cs=tinysrgb&w=150', duration: '2:47' },
-  { id: '6', title: 'Stay', artist: 'The Kid LAROI', image: 'https://images.pexels.com/photos/167636/pexels-photo-167636.jpeg?auto=compress&cs=tinysrgb&w=150', duration: '2:21' },
-];
+type Artist = { id: string; name: string; image?: string; genre?: string; aliases?: string[] };
+type Song = { id: string; title: string; artist: string; image?: string; duration?: string };
 
 const MusicPreferencesScreen: React.FC = () => {
   const [selectedArtists, setSelectedArtists] = useState<any[]>([]);
   const [selectedSongs, setSelectedSongs] = useState<any[]>([]);
   const [artistSearch, setArtistSearch] = useState('');
   const [songSearch, setSongSearch] = useState('');
-  const [filteredArtists, setFilteredArtists] = useState(mockArtists);
-  const [filteredSongs, setFilteredSongs] = useState(mockSongs);
+  const [topArtists, setTopArtists] = useState<Artist[]>([]);
+  const [artistsCatalog, setArtistsCatalog] = useState<Artist[]>([]);
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [filteredArtists, setFilteredArtists] = useState<Artist[]>([]);
+  const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const { updatePreferences } = useAuth();
   const navigate = useNavigate();
 
+  // Load data from static JSON files served from public/pref_data
   useEffect(() => {
-    const filtered = mockArtists.filter(artist =>
-      artist.name.toLowerCase().includes(artistSearch.toLowerCase())
-    );
+    const loadData = async () => {
+      try {
+        const [songsRes, artistsRes, catalogRes] = await Promise.all([
+          fetch('/pref_data/top_songs_us.json').catch(() => null),
+          fetch('/pref_data/top_artists_us.json').catch(() => null),
+          fetch('/pref_data/artists_catalog.json').catch(() => null),
+        ]);
+
+        if (songsRes && songsRes.ok) {
+          const json = await songsRes.json();
+          const mapped: Song[] = (json?.songs || []).map((s: any, idx: number) => ({
+            id: String(s.id ?? idx),
+            title: s.title ?? s.name,
+            artist: s.artist ?? s.artistName,
+            image: s.image ?? s.artworkUrl100 ?? s.artworkUrl,
+            duration: s.duration || undefined,
+          }));
+          setSongs(mapped);
+          setFilteredSongs(mapped);
+        }
+
+        if (artistsRes && artistsRes.ok) {
+          const json = await artistsRes.json();
+          const mapped: Artist[] = (json?.artists || []).map((a: any, idx: number) => ({
+            id: String(a.id ?? idx),
+            name: a.name,
+            image: a.image_url || undefined,
+          }));
+          setTopArtists(mapped);
+          setFilteredArtists(mapped);
+        }
+
+        if (catalogRes && catalogRes.ok) {
+          const json = await catalogRes.json();
+          const mapped: Artist[] = (json?.artists || []).map((a: any) => ({
+            id: a.id,
+            name: a.name,
+            image: a.image_url || undefined,
+            aliases: a.aliases || [],
+          }));
+          setArtistsCatalog(mapped);
+        }
+      } catch (e) {
+        // If anything fails, the UI will fall back to empty lists
+      }
+    };
+    loadData();
+  }, []);
+
+  // Filter artists: use catalog when searching, otherwise show top artists
+  useEffect(() => {
+    const q = artistSearch.trim().toLowerCase();
+    if (!q) {
+      setFilteredArtists(topArtists);
+      return;
+    }
+    const src = artistsCatalog.length > 0 ? artistsCatalog : topArtists;
+    const filtered = src.filter(a => {
+      const inName = a.name?.toLowerCase().includes(q);
+      const inAliases = (a.aliases || []).some((al: string) => al.toLowerCase().includes(q));
+      return inName || inAliases;
+    }).slice(0, 50);
     setFilteredArtists(filtered);
-  }, [artistSearch]);
+  }, [artistSearch, topArtists, artistsCatalog]);
 
   useEffect(() => {
-    const filtered = mockSongs.filter(song =>
-      song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
-      song.artist.toLowerCase().includes(songSearch.toLowerCase())
+    const q = songSearch.trim().toLowerCase();
+    const filtered = songs.filter(song =>
+      (song.title || '').toLowerCase().includes(q) ||
+      (song.artist || '').toLowerCase().includes(q)
     );
     setFilteredSongs(filtered);
-  }, [songSearch]);
+  }, [songSearch, songs]);
 
   const handleArtistSelect = (artist: any) => {
     if (selectedArtists.find(a => a.id === artist.id)) {
