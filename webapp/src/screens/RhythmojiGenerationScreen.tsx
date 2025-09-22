@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import RainbowText from '../components/RainbowText';
@@ -7,16 +7,57 @@ import { Coffee, LogOut, Download, Eye } from 'lucide-react';
 const RhythmojiGenerationScreen: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const didStart = useRef(false);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
 
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:5001';
+
+  const startGenerate = async () => {
+    if (!user?.preferences?.artists || !user?.preferences?.songs) return;
+    try {
+      setIsGenerating(true);
+      setError(null);
+      setImageUrl(null);
+      const artists = (user.preferences.artists || []).map((a: any) => a.name || a);
+      const songs = (user.preferences.songs || []).map((s: any) => ({ title: s.title || s.name || '', artist: s.artist || '' }));
+      const res = await fetch(`${API_BASE}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artists, songs })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.image_url) throw new Error(data?.error || 'Generation failed');
+      const url: string = String(data.image_url).startsWith('http') ? data.image_url : `${API_BASE}${data.image_url}`;
+      setImageUrl(url);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to generate');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.preferences?.artists || !user?.preferences?.songs) {
+      navigate('/preferences');
+      return;
+    }
+    if (!didStart.current) {
+      didStart.current = true;
+      startGenerate();
+    }
+  }, [user, navigate]);
+
   const handleDownload = async () => {
-    setIsGenerating(true);
-    // Simulate generation process
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsGenerating(false);
-    // In a real app, this would trigger the download
-    alert('Rhythmoji downloaded! (This is a demo)');
+    if (!imageUrl) return;
+    const a = document.createElement('a');
+    a.href = imageUrl;
+    a.download = 'rhythmoji.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   const handleLogout = () => {
@@ -87,45 +128,21 @@ const RhythmojiGenerationScreen: React.FC = () => {
           {/* LEGO Character Display */}
           <div className="mb-12 relative">
             <div className="relative inline-block">
-              {/* Character Image Placeholder - In real implementation, this would be generated */}
-              <div className="w-64 h-80 bg-gradient-to-b from-gray-200 to-gray-300 rounded-lg relative overflow-hidden shadow-2xl">
-                {/* LEGO Minifigure representation based on reference image */}
-                <div className="absolute inset-0 flex flex-col items-center justify-end pb-8">
-                  {/* Head */}
-                  <div className="w-16 h-16 bg-yellow-400 rounded-full mb-2 relative">
-                    <div className="absolute top-2 left-3 w-2 h-2 bg-black rounded-full"></div>
-                    <div className="absolute top-2 right-3 w-2 h-2 bg-black rounded-full"></div>
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-black rounded-full"></div>
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-1 bg-black rounded-full"></div>
+              {imageUrl ? (
+                <img src={imageUrl} alt="Your Rhythmoji" className="w-64 h-80 object-cover rounded-lg shadow-2xl" />
+              ) : (
+                <div className="w-64 h-80 bg-gradient-to-b from-gray-200 to-gray-300 rounded-lg relative overflow-hidden shadow-2xl">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin w-8 h-8 border-2 border-gray-700 border-t-transparent rounded-full"></div>
+                      <span className="text-gray-700 text-sm">{isGenerating ? 'Generating your Rhythmoji...' : (error ? 'Failed. Click RETRY.' : 'Ready to generate')}</span>
+                      {error && (
+                        <button onClick={startGenerate} className="px-3 py-1 text-xs rounded bg-green-500 text-white hover:bg-green-600">RETRY</button>
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* Body with music patterns */}
-                  <div className="w-12 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-sm relative">
-                    <div className="absolute inset-1 bg-pattern opacity-30"></div>
-                    {/* Musical note symbols */}
-                    <div className="absolute top-1 left-1 text-white text-xs">♪</div>
-                    <div className="absolute bottom-1 right-1 text-white text-xs">♫</div>
-                  </div>
-                  
-                  {/* Legs */}
-                  <div className="flex gap-0.5 mt-1">
-                    <div className="w-5 h-12 bg-blue-800 rounded-sm"></div>
-                    <div className="w-5 h-12 bg-blue-800 rounded-sm"></div>
-                  </div>
-                  
-                  {/* Arms */}
-                  <div className="absolute top-1/2 left-4 w-3 h-8 bg-yellow-400 rounded-sm transform -translate-y-1/2"></div>
-                  <div className="absolute top-1/2 right-4 w-3 h-8 bg-yellow-400 rounded-sm transform -translate-y-1/2"></div>
                 </div>
-                
-                {/* Glow effect */}
-                <div className="absolute inset-0 bg-green-400 opacity-0 hover:opacity-20 transition-opacity duration-500"></div>
-              </div>
-              
-              {/* Floating musical notes animation */}
-              <div className="absolute -top-4 -left-4 text-green-500 text-xl animate-bounce">♪</div>
-              <div className="absolute -top-2 -right-6 text-green-500 text-lg animate-bounce delay-500">♫</div>
-              <div className="absolute top-8 -right-8 text-green-500 text-sm animate-bounce delay-1000">♪</div>
+              )}
             </div>
           </div>
 
@@ -133,7 +150,7 @@ const RhythmojiGenerationScreen: React.FC = () => {
           <div className="space-y-4">
             <button
               onClick={handleDownload}
-              disabled={isGenerating}
+              disabled={isGenerating || !imageUrl}
               className="relative w-full group overflow-hidden"
             >
               <div className="absolute inset-0 bg-green-400 rounded-2xl blur-md opacity-60 group-hover:opacity-80 transition-opacity"></div>
@@ -146,7 +163,7 @@ const RhythmojiGenerationScreen: React.FC = () => {
                 ) : (
                   <>
                     <Download className="w-5 h-5" />
-                    <span>DOWNLOAD RHYTHMOJI</span>
+                    <span>{imageUrl ? 'DOWNLOAD RHYTHMOJI' : 'READY TO GENERATE'}</span>
                   </>
                 )}
               </div>
