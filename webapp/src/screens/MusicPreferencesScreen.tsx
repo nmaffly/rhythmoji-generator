@@ -382,11 +382,11 @@ const MusicPreferencesScreen: React.FC = () => {
             {/* Selected Songs (5 slots) */}
             <div>
               <div className="text-xs text-gray-400 mb-2">Songs</div>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-3">
                 {[0,1,2,3,4].map((i) => {
                   const s = selectedSongs[i];
                   return (
-                    <div key={i} className={`h-20 rounded-lg border flex items-center justify-center relative ${s ? 'border-green-500 bg-green-500/10' : 'border-gray-800 bg-gray-900'}`}>
+                    <div key={i} className={`rounded-lg border relative p-2 ${s ? 'border-green-500 bg-green-500/10' : 'border-gray-800 bg-gray-900'}`}>
                       {s ? (
                         <>
                           <button
@@ -396,9 +396,9 @@ const MusicPreferencesScreen: React.FC = () => {
                           >
                             <X className="w-4 h-4" />
                           </button>
-                          <div className="flex items-center gap-2 px-2">
-                            <img src={s.image || '/placeholder-artist.svg'} alt={s.title} className="w-8 h-8 rounded object-cover flex-shrink-0" />
-                            <span className="text-xs text-white leading-tight" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={s.title}>{s.title}</span>
+                          <div className="flex flex-col items-center gap-2">
+                            <img src={s.image || '/placeholder-artist.svg'} alt={s.title} className="w-12 h-12 rounded object-cover" />
+                            <span className="text-xs text-white text-center leading-tight w-full" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={s.title}>{s.title}</span>
                           </div>
                         </>
                       ) : (

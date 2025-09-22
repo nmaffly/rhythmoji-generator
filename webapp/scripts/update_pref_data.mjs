@@ -74,14 +74,15 @@ async function wikidataImageForName(name) {
 }
 
 async function enrichTopArtistImagesWikidata(artists) {
+  // Fill-only: keep Apple artwork; use Wikidata only if missing
   const enriched = [];
   for (const a of artists) {
+    if (a.image_url) { enriched.push(a); continue; }
     const name = a.name || '';
-    const eligible = name.length >= 3 && /\s/.test(name); // avoid 1-2 char or single-token ambiguous names
+    const eligible = name.length >= 3 && /\s/.test(name);
     const img = eligible ? await wikidataImageForName(name) : null;
     enriched.push({ ...a, image_url: img || a.image_url || null });
-    // brief pause to be polite
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 250));
   }
   return enriched;
 }
