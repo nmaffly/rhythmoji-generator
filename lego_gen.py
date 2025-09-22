@@ -63,28 +63,59 @@ def _edit_step(input_path, prompt, mask_path=None):
         print("Edit step failed:", e)
         return None
 
-def generate_style_plan(genres, artists):
-    sys = ("Return strict JSON with keys: animal, upper, lower, shoes, accessory. "
-           "Pick 1 animal (unrelated to genres). Use concise real-world fashion pieces.")
+def generate_style_plan(genres, artists, temperature=None, top_p=None):
+    """
+    Return strict JSON with richer, brand-inspired fashion and 1–2 vivid adjectives per slot.
+    Fallback safely if parsing fails.
+    """
+    sys = (
+        "Output ONLY strict JSON with keys: animal, upper, lower, shoes, accessory. "
+        "animal: one animal head (unrelated to genres). "
+        "upper/lower/shoes/accessory: concise brand-inspired items with 1–2 vivid adjectives (e.g., 'oversized white button-down', 'Nike Air Max-style sneakers'), no logos/text, no trademark names in isolation; describe style rather than quoting brand names; 3–8 words each."
+    )
     user = {"genres": (genres or [])[:5], "artists": (artists or [])[:5]}
-    try:
-        resp = client.chat.completions.create(
+
+    def _sanitize(v: str) -> str:
+        v = (v or "").strip().replace("\n", " ")
+        return (v[:96]).strip()
+
+    def _fallback_plan():
+        return {"animal":"fox","upper":"oversized graphic tee","lower":"relaxed-fit jeans","shoes":"retro sneakers","accessory":"chunky chain"}
+
+    temp = float(temperature if temperature is not None else 1.35)
+    tp = float(top_p if top_p is not None else 0.95)
+
+    def _ask(system_msg, user_obj):
+        return client.chat.completions.create(
             model=os.getenv("OPENAI_TEXT_MODEL","gpt-4o-mini"),
-            temperature=0.9,
-            messages=[{"role":"system","content":sys},{"role":"user","content":json.dumps(user)}]
+            temperature=temp,
+            top_p=tp,
+            messages=[{"role":"system","content":system_msg},{"role":"user","content":json.dumps(user_obj)}]
         )
+
+    try:
+        resp = _ask(sys, user)
         content = _strip_code_fences(resp.choices[0].message.content or '{}')
-        data = json.loads(content)
-        return {
-            "animal": str(data.get("animal","fox")),
-            "upper": str(data.get("upper","graphic tee")),
-            "lower": str(data.get("lower","jeans")),
-            "shoes": str(data.get("shoes","sneakers")),
-            "accessory": str(data.get("accessory","sunglasses")),
+        try:
+            data = json.loads(content)
+        except Exception:
+            # Retry once with extra constraint
+            strict_sys = sys + " Return only a JSON object, no prose."
+            resp2 = _ask(strict_sys, user)
+            content2 = _strip_code_fences(resp2.choices[0].message.content or '{}')
+            data = json.loads(content2)
+
+        plan = {
+            "animal": _sanitize(str(data.get("animal","fox"))),
+            "upper": _sanitize(str(data.get("upper","oversized graphic tee"))),
+            "lower": _sanitize(str(data.get("lower","relaxed-fit jeans"))),
+            "shoes": _sanitize(str(data.get("shoes","retro sneakers"))),
+            "accessory": _sanitize(str(data.get("accessory","chunky chain"))),
         }
+        return plan
     except Exception as e:
         print("Plan generation failed:", e)
-        return {"animal":"fox","upper":"graphic tee","lower":"jeans","shoes":"sneakers","accessory":"sunglasses"}
+        return _fallback_plan()
 
 def edit_pipeline_from_plan(base_image_path, plan):
     masks_dir = os.getenv("MASKS_DIR","base_pngs/masks")
@@ -182,11 +213,12 @@ def api_generate():
         else:
             genres.append(str(g))
     animal = (data.get('animal') or '').strip() or None
+    creative = bool(data.get('creative'))
     base_path = data.get('base_image') or "base_pngs/base_lego_realistic.png"
     if not os.path.exists(base_path):
         return jsonify({"error": f"Base image not found at {base_path}"}), 400
 
-    plan = generate_style_plan(genres, artists)
+    plan = generate_style_plan(genres, artists, temperature=(1.45 if creative else 1.1), top_p=(0.95 if creative else 0.9))
     if animal:
         plan['animal'] = animal
     print("style plan:", plan)
