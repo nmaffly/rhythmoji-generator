@@ -109,7 +109,6 @@ def _edit_step(input_path, prompt, mask_path=None):
                     image=img_f,
                     mask=mask_f,
                     size="1024x1024",
-                    response_format="b64_json",
                 )
         else:
             with open(input_path, 'rb') as img_f:
@@ -118,7 +117,6 @@ def _edit_step(input_path, prompt, mask_path=None):
                     prompt=prompt,
                     image=img_f,
                     size="1024x1024",
-                    response_format="b64_json",
                 )
         if not result.data:
             return None
