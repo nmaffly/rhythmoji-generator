@@ -163,25 +163,80 @@ async function updateAppleTopSongs() {
   await fs.writeFile(path.join(OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs, null, 2));
   await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs));
 
-  // Derive artists from song credits, de-duplicate, preserve order, bind first song artwork per artist
+  // Derive artists from song credits with better filtering:
+  // - prefer one artist per album to avoid repeating the same album artwork
+  // - exclude generic/non-person tokens (e.g., "Cast", "Soundtrack", etc.)
+  // - require names length >= 3
+  const banned = /(cast|soundtrack|original|motion\s+picture|various\s+artists|music\s+from|demon\s+hunters)/i;
+  const isValidName = (n) => {
+    if (!n) return false;
+    const name = n.trim();
+    if (name.length < 3) return false;
+    if (banned.test(name)) return false;
+    return /[a-z]/i.test(name);
+  };
+
+  const albumCount = new Map(); // albumKey -> count used
   const artistOrder = [];
-  const displayName = new Map(); // norm -> display string
-  const artistImage = new Map(); // norm -> image url
+  const displayName = new Map();
+  const artistImage = new Map();
+
+  function albumKeyOf(song) {
+    return song.albumId ? `id:${song.albumId}` : (song.album ? `name:${String(song.album).toLowerCase()}` : null);
+  }
+
+  // First pass: allow at most 1 artist per album
   for (const s of uniqueSongs) {
+    const ak = albumKeyOf(s);
+    if (!ak) continue;
+    const used = albumCount.get(ak) || 0;
+    if (used >= 1) continue;
     const credits = splitArtistCredits(s.artist);
+    let chosen = null;
     for (const c of credits) {
       const nameDisp = normalizeArtistName(c);
+      if (!isValidName(nameDisp)) continue;
       const norm = nameDisp.toLowerCase();
-      if (!norm) continue;
-      if (!displayName.has(norm)) {
-        displayName.set(norm, nameDisp);
-        artistOrder.push(norm);
+      if (displayName.has(norm)) continue;
+      chosen = { norm, nameDisp };
+      break;
+    }
+    if (chosen) {
+      displayName.set(chosen.norm, chosen.nameDisp);
+      artistOrder.push(chosen.norm);
+      if (s.image && !artistImage.has(chosen.norm)) artistImage.set(chosen.norm, s.image);
+      albumCount.set(ak, used + 1);
+      if (artistOrder.length >= 10) break;
+    }
+  }
+
+  // Second pass (optional): if fewer than 10, allow up to 2 per album
+  if (artistOrder.length < 10) {
+    for (const s of uniqueSongs) {
+      const ak = albumKeyOf(s);
+      if (!ak) continue;
+      const used = albumCount.get(ak) || 0;
+      if (used >= 2) continue;
+      const credits = splitArtistCredits(s.artist);
+      let chosen = null;
+      for (const c of credits) {
+        const nameDisp = normalizeArtistName(c);
+        if (!isValidName(nameDisp)) continue;
+        const norm = nameDisp.toLowerCase();
+        if (displayName.has(norm)) continue;
+        chosen = { norm, nameDisp };
+        break;
       }
-      if (!artistImage.has(norm) && s.image) {
-        artistImage.set(norm, s.image);
+      if (chosen) {
+        displayName.set(chosen.norm, chosen.nameDisp);
+        artistOrder.push(chosen.norm);
+        if (s.image && !artistImage.has(chosen.norm)) artistImage.set(chosen.norm, s.image);
+        albumCount.set(ak, used + 1);
+        if (artistOrder.length >= 10) break;
       }
     }
   }
+
   const allArtists = artistOrder.map(norm => ({ name: displayName.get(norm), image_url: artistImage.get(norm) || null }));
 
   // Top 10 unique artists; then try to enrich missing images from Wikidata

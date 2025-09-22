@@ -1,7 +1,7 @@
 {
   "source": "apple_music_rss",
   "country": "us",
-  "updated_at": "2025-09-22T04:06:18.489Z",
+  "updated_at": "2025-09-22T05:02:23.326Z",
   "songs": [
     {
       "id": "1821526331",
@@ -154,6 +154,16 @@
       "primaryArtist": "Post Malone"
     },
     {
+      "id": "1820264339",
+      "title": "Free",
+      "artist": "Rumi, JINU, EJAE, Andrew Choi & KPop Demon Hunters Cast",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/free/1820264137?i=1820264339",
+      "albumId": 1820264137,
+      "album": "KPop Demon Hunters (Soundtrack from the Netflix Film)",
+      "primaryArtist": "Rumi, JINU, EJAE, Andrew Choi & KPop Demon Hunters Cast"
+    },
+    {
       "id": "1825994651",
       "title": "YUKON",
       "artist": "Justin Bieber",
@@ -174,6 +184,16 @@
       "primaryArtist": "SZA"
     },
     {
+      "id": "1818103445",
+      "title": "Manchild",
+      "artist": "Sabrina Carpenter",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/b7/50/a3/b750a392-cfaa-bedc-7d81-cf7a1718e960/25UMGIM76990.rgb.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/manchild/1818103444?i=1818103445",
+      "albumId": 1818103444,
+      "album": "Manchild - Single",
+      "primaryArtist": "Sabrina Carpenter"
+    },
+    {
       "id": "1648587330",
       "title": "In A Minute",
       "artist": "Lil Baby",
@@ -192,26 +212,6 @@
       "albumId": 1641389258,
       "album": "Romantic Homicide - Single",
       "primaryArtist": "d4vd"
-    },
-    {
-      "id": "1818103445",
-      "title": "Manchild",
-      "artist": "Sabrina Carpenter",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/b7/50/a3/b750a392-cfaa-bedc-7d81-cf7a1718e960/25UMGIM76990.rgb.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/manchild/1818103444?i=1818103445",
-      "albumId": 1818103444,
-      "album": "Manchild - Single",
-      "primaryArtist": "Sabrina Carpenter"
-    },
-    {
-      "id": "1820264339",
-      "title": "Free",
-      "artist": "Rumi, JINU, EJAE, Andrew Choi & KPop Demon Hunters Cast",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/free/1820264137?i=1820264339",
-      "albumId": 1820264137,
-      "album": "KPop Demon Hunters (Soundtrack from the Netflix Film)",
-      "primaryArtist": "Rumi, JINU, EJAE, Andrew Choi & KPop Demon Hunters Cast"
     },
     {
       "id": "1824543092",
@@ -274,26 +274,6 @@
       "primaryArtist": "Morgan Wallen"
     },
     {
-      "id": "1657869492",
-      "title": "Snooze",
-      "artist": "SZA",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/bd/3b/a9/bd3ba9fb-9609-144f-bcfe-ead67b5f6ab3/196589564931.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/snooze/1657869377?i=1657869492",
-      "albumId": 1657869377,
-      "album": "SOS",
-      "primaryArtist": "SZA"
-    },
-    {
-      "id": "1506297772",
-      "title": "March Madness",
-      "artist": "Future",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f4/5c/bc/f45cbc87-8e29-b069-39d8-71db2fc0d1e3/886448381211.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/march-madness/1506297314?i=1506297772",
-      "albumId": 1506297314,
-      "album": "56 Nights",
-      "primaryArtist": "Future"
-    },
-    {
       "id": "1817609509",
       "title": "Man I Need",
       "artist": "Olivia Dean",
@@ -304,6 +284,16 @@
       "primaryArtist": "Olivia Dean"
     },
     {
+      "id": "1657869492",
+      "title": "Snooze",
+      "artist": "SZA",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/bd/3b/a9/bd3ba9fb-9609-144f-bcfe-ead67b5f6ab3/196589564931.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/snooze/1657869377?i=1657869492",
+      "albumId": 1657869377,
+      "album": "SOS",
+      "primaryArtist": "SZA"
+    },
+    {
       "id": "1621803969",
       "title": "LIKE ME (feat. 42 Dugg & Lil Baby)",
       "artist": "Future",
@@ -311,6 +301,16 @@
       "url": "https://music.apple.com/us/album/like-me-feat-42-dugg-lil-baby/1621803882?i=1621803969",
       "albumId": 1621803882,
       "album": "I NEVER LIKED YOU",
+      "primaryArtist": "Future"
+    },
+    {
+      "id": "1506297772",
+      "title": "March Madness",
+      "artist": "Future",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f4/5c/bc/f45cbc87-8e29-b069-39d8-71db2fc0d1e3/886448381211.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/march-madness/1506297314?i=1506297772",
+      "albumId": 1506297314,
+      "album": "56 Nights",
       "primaryArtist": "Future"
     },
     {
@@ -344,16 +344,6 @@
       "primaryArtist": "BigXthaPlug & Ella Langley"
     },
     {
-      "id": "1796127375",
-      "title": "NOKIA",
-      "artist": "Drake",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/34/10/1e/34101e1f-f4b9-907a-ce47-3fba5b3ee5e8/50222.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/nokia/1796127242?i=1796127375",
-      "albumId": 1796127242,
-      "album": "$ome $exy $ongs 4 U",
-      "primaryArtist": "Drake"
-    },
-    {
       "id": "1621207921",
       "title": "Frozen",
       "artist": "Lil Baby",
@@ -362,6 +352,16 @@
       "albumId": 1621207919,
       "album": "Frozen - Single",
       "primaryArtist": "Lil Baby"
+    },
+    {
+      "id": "1796127375",
+      "title": "NOKIA",
+      "artist": "Drake",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/34/10/1e/34101e1f-f4b9-907a-ce47-3fba5b3ee5e8/50222.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/nokia/1796127242?i=1796127375",
+      "albumId": 1796127242,
+      "album": "$ome $exy $ongs 4 U",
+      "primaryArtist": "Drake"
     },
     {
       "id": "1737085899",
@@ -414,16 +414,6 @@
       "primaryArtist": "Future, Metro Boomin & Kendrick Lamar"
     },
     {
-      "id": "1556670532",
-      "title": "Wants and Needs (feat. Lil Baby)",
-      "artist": "Drake",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/63/2a/34/632a3488-d104-3ff1-dc02-4ed86f58ed05/21UMGIM18577.rgb.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/wants-and-needs-feat-lil-baby/1556669854?i=1556670532",
-      "albumId": 1556669854,
-      "album": "Scary Hours 2",
-      "primaryArtist": "Drake"
-    },
-    {
       "id": "1239976610",
       "title": "Broken Clocks",
       "artist": "SZA",
@@ -432,6 +422,16 @@
       "albumId": 1239976329,
       "album": "Ctrl",
       "primaryArtist": "SZA"
+    },
+    {
+      "id": "1556670532",
+      "title": "Wants and Needs (feat. Lil Baby)",
+      "artist": "Drake",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/63/2a/34/632a3488-d104-3ff1-dc02-4ed86f58ed05/21UMGIM18577.rgb.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/wants-and-needs-feat-lil-baby/1556669854?i=1556670532",
+      "albumId": 1556669854,
+      "album": "Scary Hours 2",
+      "primaryArtist": "Drake"
     },
     {
       "id": "1618153473",
@@ -454,6 +454,36 @@
       "primaryArtist": "Morgan Wallen"
     },
     {
+      "id": "1589051544",
+      "title": "Nevada",
+      "artist": "YoungBoy Never Broke Again",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/18/5d/1b/185d1b16-0799-4b26-4c3f-678ccfe58753/075679766922.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/nevada/1589050995?i=1589051544",
+      "albumId": 1589050995,
+      "album": "Sincerely, Kentrell",
+      "primaryArtist": "YoungBoy Never Broke Again"
+    },
+    {
+      "id": "1787023936",
+      "title": "DtMF",
+      "artist": "Bad Bunny",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/90/5e/7e/905e7ed5-a8fa-a8f3-cd06-0028fdf3afaa/199066342442.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/dtmf/1787022393?i=1787023936",
+      "albumId": 1787022393,
+      "album": "DeBÍ TiRAR MáS FOToS",
+      "primaryArtist": "Bad Bunny"
+    },
+    {
+      "id": "1825697701",
+      "title": "3am",
+      "artist": "Loe Shimmy & Don Toliver",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/9b/76/48/9b764810-1da2-0255-09dd-9f5d358471be/764656424572_cover.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/3am/1825697667?i=1825697701",
+      "albumId": 1825697667,
+      "album": "Rockstar Junkie",
+      "primaryArtist": "Loe Shimmy & Don Toliver"
+    },
+    {
       "id": "1691699836",
       "title": "Lose Control",
       "artist": "Teddy Swims",
@@ -472,56 +502,6 @@
       "albumId": 1017053934,
       "album": "DS2 (Deluxe)",
       "primaryArtist": "Future"
-    },
-    {
-      "id": "1589051544",
-      "title": "Nevada",
-      "artist": "YoungBoy Never Broke Again",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/18/5d/1b/185d1b16-0799-4b26-4c3f-678ccfe58753/075679766922.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/nevada/1589050995?i=1589051544",
-      "albumId": 1589050995,
-      "album": "Sincerely, Kentrell",
-      "primaryArtist": "YoungBoy Never Broke Again"
-    },
-    {
-      "id": "1825697701",
-      "title": "3am",
-      "artist": "Loe Shimmy & Don Toliver",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/9b/76/48/9b764810-1da2-0255-09dd-9f5d358471be/764656424572_cover.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/3am/1825697667?i=1825697701",
-      "albumId": 1825697667,
-      "album": "Rockstar Junkie",
-      "primaryArtist": "Loe Shimmy & Don Toliver"
-    },
-    {
-      "id": "1787023936",
-      "title": "DtMF",
-      "artist": "Bad Bunny",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/90/5e/7e/905e7ed5-a8fa-a8f3-cd06-0028fdf3afaa/199066342442.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/dtmf/1787022393?i=1787023936",
-      "albumId": 1787022393,
-      "album": "DeBÍ TiRAR MáS FOToS",
-      "primaryArtist": "Bad Bunny"
-    },
-    {
-      "id": "1773342229",
-      "title": "Love Somebody",
-      "artist": "Morgan Wallen",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/0e/6d/e1/0e6de152-3ff5-84a3-7ce7-7dfbdcb2c3e1/24UMGIM96374.rgb.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/love-somebody/1773341928?i=1773342229",
-      "albumId": 1773341928,
-      "album": "Love Somebody - Single",
-      "primaryArtist": "Morgan Wallen"
-    },
-    {
-      "id": "1584281787",
-      "title": "Knife Talk (feat. 21 Savage & Project Pat)",
-      "artist": "Drake",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/11/36/38/1136384a-eebc-697a-c005-d890e41c0854/21UM1IM07518.rgb.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/knife-talk-feat-21-savage-project-pat/1584281467?i=1584281787",
-      "albumId": 1584281467,
-      "album": "Certified Lover Boy",
-      "primaryArtist": "Drake"
     },
     {
       "id": "1438765134",
@@ -544,6 +524,26 @@
       "primaryArtist": "YoungBoy Never Broke Again"
     },
     {
+      "id": "1773342229",
+      "title": "Love Somebody",
+      "artist": "Morgan Wallen",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/0e/6d/e1/0e6de152-3ff5-84a3-7ce7-7dfbdcb2c3e1/24UMGIM96374.rgb.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/love-somebody/1773341928?i=1773342229",
+      "albumId": 1773341928,
+      "album": "Love Somebody - Single",
+      "primaryArtist": "Morgan Wallen"
+    },
+    {
+      "id": "1584281787",
+      "title": "Knife Talk (feat. 21 Savage & Project Pat)",
+      "artist": "Drake",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/11/36/38/1136384a-eebc-697a-c005-d890e41c0854/21UM1IM07518.rgb.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/knife-talk-feat-21-savage-project-pat/1584281467?i=1584281787",
+      "albumId": 1584281467,
+      "album": "Certified Lover Boy",
+      "primaryArtist": "Drake"
+    },
+    {
       "id": "1804142886",
       "title": "Marlboro Rojo",
       "artist": "Fuerza Regida",
@@ -552,16 +552,6 @@
       "albumId": 1804142476,
       "album": "111XPANTIA",
       "primaryArtist": "Fuerza Regida"
-    },
-    {
-      "id": "1724488124",
-      "title": "Beautiful Things",
-      "artist": "Benson Boone",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/54/f4/92/54f49210-e260-b519-ebbd-f4f40ee710cd/054391342751.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/beautiful-things/1724488123?i=1724488124",
-      "albumId": 1724488123,
-      "album": "Beautiful Things - Single",
-      "primaryArtist": "Benson Boone"
     },
     {
       "id": "1824363800",
@@ -574,14 +564,14 @@
       "primaryArtist": "YoungBoy Never Broke Again"
     },
     {
-      "id": "1818407111",
-      "title": "You Proof",
-      "artist": "Morgan Wallen",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/b7/66/c4/b766c457-2500-e2d6-895e-59b45e95d009/00602445957033_Cover.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/you-proof/1818406806?i=1818407111",
-      "albumId": 1818406806,
-      "album": "You Proof - Single",
-      "primaryArtist": "Morgan Wallen"
+      "id": "1724488124",
+      "title": "Beautiful Things",
+      "artist": "Benson Boone",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/54/f4/92/54f49210-e260-b519-ebbd-f4f40ee710cd/054391342751.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/beautiful-things/1724488123?i=1724488124",
+      "albumId": 1724488123,
+      "album": "Beautiful Things - Single",
+      "primaryArtist": "Benson Boone"
     },
     {
       "id": "1617171238",
@@ -592,6 +582,16 @@
       "albumId": 1617170958,
       "album": "The Last Slimeto",
       "primaryArtist": "YoungBoy Never Broke Again"
+    },
+    {
+      "id": "1818407111",
+      "title": "You Proof",
+      "artist": "Morgan Wallen",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/b7/66/c4/b766c457-2500-e2d6-895e-59b45e95d009/00602445957033_Cover.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/you-proof/1818406806?i=1818407111",
+      "albumId": 1818406806,
+      "album": "You Proof - Single",
+      "primaryArtist": "Morgan Wallen"
     },
     {
       "id": "1150135924",
@@ -624,14 +624,24 @@
       "primaryArtist": "sombr"
     },
     {
-      "id": "1440827492",
-      "title": "Tennessee Whiskey",
-      "artist": "Chris Stapleton",
-      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/e2/4b/60/e24b6016-8278-bb18-cf5d-d44bf68371da/00602547223838.rgb.jpg/200x200bb.jpg",
-      "url": "https://music.apple.com/us/album/tennessee-whiskey/1440827477?i=1440827492",
-      "albumId": 1440827477,
-      "album": "Traveller",
-      "primaryArtist": "Chris Stapleton"
+      "id": "1820264142",
+      "title": "TAKEDOWN (JEONGYEON, JIHYO, CHAEYOUNG)",
+      "artist": "TWICE",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/takedown-jeongyeon-jihyo-chaeyoung/1820264137?i=1820264142",
+      "albumId": 1820264137,
+      "album": "KPop Demon Hunters (Soundtrack from the Netflix Film)",
+      "primaryArtist": "TWICE"
+    },
+    {
+      "id": "1622045635",
+      "title": "Tití Me Preguntó",
+      "artist": "Bad Bunny",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/3e/04/eb/3e04ebf6-370f-f59d-ec84-2c2643db92f1/196626945068.jpg/200x200bb.jpg",
+      "url": "https://music.apple.com/us/album/tit%C3%AD-me-pregunt%C3%B3/1622045624?i=1622045635",
+      "albumId": 1622045624,
+      "album": "Un Verano Sin Ti",
+      "primaryArtist": "Bad Bunny"
     }
   ]
 }
