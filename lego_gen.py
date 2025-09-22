@@ -19,6 +19,9 @@ def edit_lego_head(base_image_path, animal_name):
         animal_name: The animal head to generate (e.g., "red panda", "bear")
     """
     
+    # Create rhythmojis folder if it doesn't exist
+    os.makedirs("rhythmojis", exist_ok=True)
+    
     prompt = (
         f"Replace the head of this LEGO minifigure with a {animal_name} head. "
         "Make it look like a LEGO-style {animal_name} head that fits naturally. Do not make it too realistic "
@@ -49,7 +52,7 @@ def edit_lego_head(base_image_path, animal_name):
             # Check if we have base64 data or URL
             if image_data.b64_json:
                 # Use base64 data
-                output_filename = f"lego_{animal_name.replace(' ', '_')}.png"
+                output_filename = f"rhythmojis/lego_{animal_name.replace(' ', '_')}.png"
                 with open(output_filename, "wb") as f:
                     f.write(base64.b64decode(image_data.b64_json))
                 print(f"Saved: {output_filename} (from base64)")
@@ -60,7 +63,7 @@ def edit_lego_head(base_image_path, animal_name):
                 response = requests.get(image_data.url)
                 response.raise_for_status()
                 
-                output_filename = f"lego_{animal_name.replace(' ', '_')}.png"
+                output_filename = f"rhythmojis/lego_{animal_name.replace(' ', '_')}.png"
                 with open(output_filename, "wb") as f:
                     f.write(response.content)
                 print(f"Saved: {output_filename} (from URL)")
@@ -80,7 +83,7 @@ def edit_lego_head(base_image_path, animal_name):
 # Example usage
 if __name__ == "__main__":
     # Edit the LEGO head
-    result = edit_lego_head("base_lego_3d.png", "dog")
+    result = edit_lego_head("base_pngs/base_lego_realistic.png", "dog")
     
     if result:
         print(f"Successfully created: {result}")
