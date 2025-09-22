@@ -101,20 +101,25 @@ def _save_result_image(image_data, out_path):
 def _edit_step(input_path, prompt, mask_path=None):
     """Run a single images.edit step; returns path to new temp file or None on failure."""
     try:
-        files = {
-            'image': open(input_path, 'rb')
-        }
         if mask_path and os.path.exists(mask_path):
-            files['mask'] = open(mask_path, 'rb')
-
-        result = client.images.edit(
-            model=os.getenv("OPENAI_EDIT_MODEL", "gpt-image-1"),
-            prompt=prompt,
-            image=files.get('image'),
-            mask=files.get('mask'),
-            size="1024x1024",
-            response_format="b64_json",
-        )
+            with open(input_path, 'rb') as img_f, open(mask_path, 'rb') as mask_f:
+                result = client.images.edit(
+                    model=os.getenv("OPENAI_EDIT_MODEL", "gpt-image-1"),
+                    prompt=prompt,
+                    image=img_f,
+                    mask=mask_f,
+                    size="1024x1024",
+                    response_format="b64_json",
+                )
+        else:
+            with open(input_path, 'rb') as img_f:
+                result = client.images.edit(
+                    model=os.getenv("OPENAI_EDIT_MODEL", "gpt-image-1"),
+                    prompt=prompt,
+                    image=img_f,
+                    size="1024x1024",
+                    response_format="b64_json",
+                )
         if not result.data:
             return None
         image_data = result.data[0]
@@ -172,9 +177,8 @@ def generate_rhythmoji(base_image_path, artists, songs, animal=None):
         f"Replace ONLY the head with a LEGO-style {animal_txt} head; keep minifig proportions, studs. "
         "Do not touch torso, arms, legs, or background. Straight-on pose, LEGO realism, neutral background."
     )
-    if os.path.exists(head_mask):
-        out = _edit_step(current, head_prompt, head_mask)
-        current = out or current
+    out = _edit_step(current, head_prompt, head_mask if os.path.exists(head_mask) else None)
+    current = out or current
 
     # Step 2: Torso/top
     if top:
@@ -182,9 +186,8 @@ def generate_rhythmoji(base_image_path, artists, songs, animal=None):
             f"Apply a {top} as the upper outfit, adapted to LEGO minifigure styling (prints/shapes). "
             "Only modify torso/arms region. Keep head as-is, keep legs/feet unchanged. LEGO realism."
         )
-        if os.path.exists(torso_mask):
-            out = _edit_step(current, torso_prompt, torso_mask)
-            current = out or current
+        out = _edit_step(current, torso_prompt, torso_mask if os.path.exists(torso_mask) else None)
+        current = out or current
 
     # Step 3: Legs/feet
     legs_desc = ", ".join([x for x in [bottom, shoe] if x])
@@ -192,16 +195,15 @@ def generate_rhythmoji(base_image_path, artists, songs, animal=None):
         legs_prompt = (
             f"Update legs/feet with: {legs_desc}, adapted to LEGO. Only modify legs/feet. Keep head/torso unchanged. LEGO realism."
         )
-        if os.path.exists(legs_mask):
-            out = _edit_step(current, legs_prompt, legs_mask)
-            current = out or current
+        out = _edit_step(current, legs_prompt, legs_mask if os.path.exists(legs_mask) else None)
+        current = out or current
 
     # Step 4: Accessory (optional)
-    if accessory and os.path.exists(acc_mask):
+    if accessory:
         acc_prompt = (
-            f"Add a subtle {accessory} as accessory, adapted to LEGO. Only modify the accessory region defined by the mask."
+            f"Add a subtle {accessory} as accessory, adapted to LEGO. If no mask, place minimally without changing other regions."
         )
-        out = _edit_step(current, acc_prompt, acc_mask)
+        out = _edit_step(current, acc_prompt, acc_mask if os.path.exists(acc_mask) else None)
         current = out or current
 
     # Save final
