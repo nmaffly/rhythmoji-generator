@@ -4,6 +4,7 @@
 .env.*.local
 
 # Virtual environment
+rhythmojis/*
 rhythmoji_venv/
 venv/
 env/

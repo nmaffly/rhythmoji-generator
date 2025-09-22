@@ -4,6 +4,7 @@ import requests
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
+import time
 
 # Load environment
 load_dotenv(override=True)
@@ -68,6 +69,8 @@ def generate_style_plan(genres, artists, temperature=None, top_p=None):
     Return strict JSON with richer, brand-inspired fashion and 1–2 vivid adjectives per slot.
     Fallback safely if parsing fails.
     """
+    # not correlated with genres
+    # maybe decide on animal head w/o LLM call (i.e. randomly select from list)
     sys = (
         "Output ONLY strict JSON with keys: animal, upper, lower, shoes, accessory. "
         "animal: one animal head (unrelated to genres). "
@@ -167,55 +170,43 @@ def edit_pipeline_from_plan(base_image_path, plan):
         dst.write(src.read())
     return out_path, f"/rhythmojis/{out_name}"
 
-def edit_lego_head(base_image_path, animal_name, mask_path=None, model=None):
-    os.makedirs("rhythmojis", exist_ok=True)
-    base_prompt = (
-        f"Replace the head with a LEGO-style {animal_name} head that fits naturally. "
-        "Preserve LEGO proportions and straight-on pose; studio product lighting; glossy ABS plastic with specular highlights; no on-image text/logos."
+def generate_rhythmoji(base_image_path, plan):
+    upper = plan.get('upper')
+    lower = plan.get('lower')
+    shoes = plan.get('shoes')
+    accessory = plan.get('accessory')
+    animal = plan.get('animal')
+
+    prompt = (
+        f"Replace the head with a LEGO-style {animal} head."
+        f"Apply {upper} to torso/arms adapted to LEGO."  
+        f"Add a subtle {accessory} accessory adapted to LEGO."
+        f"Update legs with: {lower}, adapted to LEGO."
+        f"Update shoes with: {shoes}, adapted to LEGO."
+        "Keep and pose exactly the same (exactly front on, no side view), with studio lighting and a white background."
     )
+
     try:
-        # Optional one-shot generation using latest image model (gpt-image-1)
-        gen_model = (model or os.getenv("OPENAI_IMAGE_MODEL","gpt-image-1")).strip().lower()
-        if gen_model in ("gpt-image-1", "generate"):
-            gen_prompt = (
-                f"Front-facing LEGO minifigure with a LEGO-style {animal_name} head. "
-                "Authentic LEGO proportions and detailing; glossy ABS plastic with pronounced specular highlights; "
-                "neutral studio product background; no on-image text or logos."
-            )
-            result = client.images.generate(model="gpt-image-1",
-                                            prompt=gen_prompt,
-                                            size="1024x1024",
-                                            quality="hd",
-                                            response_format="b64_json")
-        else:
-            if mask_path and os.path.exists(mask_path):
-                with open(base_image_path,'rb') as img_f, open(mask_path,'rb') as m_f:
-                    result = client.images.edit(model="gpt-image-1", image=img_f, mask=m_f, prompt=base_prompt, size="1024x1024")
-            else:
-                with open(base_image_path,'rb') as img_f:
-                    result = client.images.edit(model="gpt-image-1", image=img_f, prompt=base_prompt, size="1024x1024")
+        result = client.images.edit(
+            model="gpt-image-1",
+            image=open(base_image_path, "rb"),
+            prompt=prompt,
+            size="1024x1024",
+            quality="high"
+        )
+    
         if not result or not result.data:
-            return None, None
+            return None
         image_data = result.data[0]
-        out_name = f"lego_{animal_name.replace(' ','_')}_{uuid.uuid4().hex}.png"
-        out_path = os.path.join("rhythmojis", out_name)
+
+        os.makedirs("rhythmojis", exist_ok=True)
+        out_path = f"rhythmojis/lego_{uuid.uuid4().hex}.png"
         if not _save_result_image(image_data, out_path):
             return None, None
-        return out_path, f"/rhythmojis/{out_name}"
+        return out_path, f"/{out_path}"
     except Exception as e:
-        print("Error during API call:", e)
-        print("Error type:", type(e))
-        return None, None
-
-def generate_rhythmoji(base_image_path, artists, songs, animal=None, model=None):
-    plan = generate_style_plan(None, artists)
-    if animal:
-        plan['animal'] = animal
-    try:
-        return edit_pipeline_from_plan(base_image_path, plan)
-    except Exception as e:
-        print("Pipeline failed; fallback to head-only:", e)
-        return edit_lego_head(base_image_path, plan.get('animal','fox'))
+        print("Edit step failed:", e)
+        return None
 
 # Flask API
 app = Flask(__name__)
@@ -227,8 +218,11 @@ def api_generate():
         data = request.get_json(force=True) or {}
     except Exception:
         return jsonify({"error":"Invalid JSON"}), 400
+    
+    # log time start
+    start_time = time.time()
 
-    print("music data sent:", json.dumps(data, ensure_ascii=False))
+    print("music data sent:\n", json.dumps(data, indent=2,ensure_ascii=False))
     artists = normalize_text_list(data.get('artists') or [])
     genres = []
     for g in (data.get('genres') or []):
@@ -246,7 +240,12 @@ def api_generate():
     if animal:
         plan['animal'] = animal
     print("style plan:", plan)
-    file_path, url_path = edit_pipeline_from_plan(base_path, plan)
+    # file_path, url_path = edit_pipeline_from_plan(base_path, plan)
+    file_path, url_path = generate_rhythmoji(base_path, plan)
+    
+    # log time end
+    end_time = time.time()
+    print(f"Time taken: {end_time - start_time} seconds")
     if not file_path:
         return jsonify({"error":"Image generation failed"}), 500
     return jsonify({"image_url": url_path, "file_path": file_path})
