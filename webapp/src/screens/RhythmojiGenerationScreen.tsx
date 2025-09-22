@@ -129,7 +129,7 @@ const RhythmojiGenerationScreen: React.FC = () => {
           <div className="mb-12 relative">
             <div className="relative inline-block">
               {imageUrl ? (
-                <img src={imageUrl} alt="Your Rhythmoji" className="w-64 h-80 object-cover rounded-lg shadow-2xl" />
+                <img src={imageUrl} alt="Your Rhythmoji" className="w-64 max-w-full h-auto max-h-[75vh] object-contain rounded-lg shadow-2xl" />
               ) : (
                 <div className="w-64 h-80 bg-gradient-to-b from-gray-200 to-gray-300 rounded-lg relative overflow-hidden shadow-2xl">
                   <div className="absolute inset-0 flex items-center justify-center">
