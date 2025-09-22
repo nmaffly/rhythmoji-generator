@@ -127,23 +127,36 @@ def edit_pipeline_from_plan(base_image_path, plan):
 
     current = base_image_path
     # Head
-    head_prompt = f"Replace only the head with a LEGO-style {plan['animal']} head. Keep proportions; don't touch torso/legs/background."
+    head_prompt = (
+        f"Replace only the head with a LEGO-style {plan['animal']} head. "
+        "Keep proportions; don't touch torso/legs/background. "
+        "Render glossy ABS plastic with clear specular highlights and studio product lighting; no on-image text/logos."
+    )
     out = _edit_step(current, head_prompt, head_mask if os.path.exists(head_mask) else None)
     current = out or current
     # Torso
     if plan.get('upper'):
-        torso_prompt = f"Apply {plan['upper']} to torso/arms adapted to LEGO; only modify torso/arms; keep head/legs unchanged."
+        torso_prompt = (
+            f"Apply {plan['upper']} to torso/arms adapted to LEGO; only modify torso/arms; keep head/legs unchanged. "
+            "Glossy ABS plastic finish with specular highlights; studio product lighting; no on-image text/logos."
+        )
         out = _edit_step(current, torso_prompt, torso_mask if os.path.exists(torso_mask) else None)
         current = out or current
     # Legs + shoes
     legs_desc = ", ".join([x for x in [plan.get('lower'), plan.get('shoes')] if x])
     if legs_desc:
-        legs_prompt = f"Update legs/feet with: {legs_desc}, adapted to LEGO; only modify legs/feet; keep head/torso unchanged."
+        legs_prompt = (
+            f"Update legs/feet with: {legs_desc}, adapted to LEGO; only modify legs/feet; keep head/torso unchanged. "
+            "Glossy ABS plastic finish with specular highlights; studio product lighting; no on-image text/logos."
+        )
         out = _edit_step(current, legs_prompt, legs_mask if os.path.exists(legs_mask) else None)
         current = out or current
     # Accessory
     if plan.get('accessory'):
-        acc_prompt = f"Add a subtle {plan['accessory']} accessory adapted to LEGO; avoid altering other regions."
+        acc_prompt = (
+            f"Add a subtle {plan['accessory']} accessory adapted to LEGO; avoid altering other regions. "
+            "Glossy ABS plastic realism where applicable; specular highlights; studio product lighting; no on-image text/logos."
+        )
         out = _edit_step(current, acc_prompt, acc_mask if os.path.exists(acc_mask) else None)
         current = out or current
 
@@ -156,14 +169,24 @@ def edit_pipeline_from_plan(base_image_path, plan):
 
 def edit_lego_head(base_image_path, animal_name, mask_path=None, model=None):
     os.makedirs("rhythmojis", exist_ok=True)
-    base_prompt = (f"Replace the head with a LEGO-style {animal_name} head that fits naturally. "
-                   "Preserve LEGO proportions and straight-on pose; neutral lighting; no text or logos.")
+    base_prompt = (
+        f"Replace the head with a LEGO-style {animal_name} head that fits naturally. "
+        "Preserve LEGO proportions and straight-on pose; studio product lighting; glossy ABS plastic with specular highlights; no on-image text/logos."
+    )
     try:
-        if (model or os.getenv("OPENAI_IMAGE_MODEL","")).strip().lower() == "dall-e-3":
-            result = client.images.generate(model="dall-e-3",
-                                            prompt=(f"Front-facing LEGO minifigure with a LEGO-style {animal_name} head;"
-                                                    " LEGO realism; neutral studio background; no text."),
-                                            size="1024x1024", quality="hd", response_format="b64_json")
+        # Optional one-shot generation using latest image model (gpt-image-1)
+        gen_model = (model or os.getenv("OPENAI_IMAGE_MODEL","gpt-image-1")).strip().lower()
+        if gen_model in ("gpt-image-1", "generate"):
+            gen_prompt = (
+                f"Front-facing LEGO minifigure with a LEGO-style {animal_name} head. "
+                "Authentic LEGO proportions and detailing; glossy ABS plastic with pronounced specular highlights; "
+                "neutral studio product background; no on-image text or logos."
+            )
+            result = client.images.generate(model="gpt-image-1",
+                                            prompt=gen_prompt,
+                                            size="1024x1024",
+                                            quality="hd",
+                                            response_format="b64_json")
         else:
             if mask_path and os.path.exists(mask_path):
                 with open(base_image_path,'rb') as img_f, open(mask_path,'rb') as m_f:
