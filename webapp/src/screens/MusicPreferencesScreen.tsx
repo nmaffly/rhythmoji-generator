@@ -8,8 +8,8 @@ type Artist = { id: string; name: string; image?: string; genre?: string; aliase
 type Song = { id: string; title: string; artist: string; image?: string; duration?: string };
 
 const MusicPreferencesScreen: React.FC = () => {
-  const [selectedArtists, setSelectedArtists] = useState<any[]>([]);
-  const [selectedSongs, setSelectedSongs] = useState<any[]>([]);
+  const [selectedArtists, setSelectedArtists] = useState<Artist[]>([]);
+  const [selectedSongs, setSelectedSongs] = useState<Song[]>([]);
   const [artistSearch, setArtistSearch] = useState('');
   const [songSearch, setSongSearch] = useState('');
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
@@ -22,6 +22,10 @@ const MusicPreferencesScreen: React.FC = () => {
 
   const { updatePreferences } = useAuth();
   const navigate = useNavigate();
+
+  // Canonical artist ID (slug of name) to unify across sources
+  const slug = (s: string) => s.toLowerCase().trim().replace(/\s+/g, '-');
+  const artistId = (name: string) => `name:${slug(name)}`;
 
   // Load data from static JSON files served from public/pref_data
   useEffect(() => {
@@ -49,8 +53,8 @@ const MusicPreferencesScreen: React.FC = () => {
 
         if (artistsRes && artistsRes.ok) {
           const json = await artistsRes.json();
-          const arr: Artist[] = (json?.artists || []).map((a: any, idx: number) => ({
-            id: String(a.id ?? idx),
+          const arr: Artist[] = (json?.artists || []).map((a: any) => ({
+            id: artistId(a.name),
             name: a.name,
             image: a.image_url || undefined,
           }));
@@ -58,7 +62,7 @@ const MusicPreferencesScreen: React.FC = () => {
           const seen = new Set<string>();
           const mapped: Artist[] = [];
           for (const a of arr) {
-            const key = a.name?.trim().toLowerCase();
+            const key = a.id;
             if (key && !seen.has(key)) {
               seen.add(key);
               mapped.push(a);
@@ -72,7 +76,7 @@ const MusicPreferencesScreen: React.FC = () => {
         if (catalogRes && catalogRes.ok) {
           const json = await catalogRes.json();
           const mapped: Artist[] = (json?.artists || []).map((a: any) => ({
-            id: a.id,
+            id: artistId(a.name),
             name: a.name,
             image: a.image_url || undefined,
             aliases: a.aliases || [],
@@ -97,7 +101,7 @@ const MusicPreferencesScreen: React.FC = () => {
     loadData();
   }, []);
 
-  // Filter artists: use catalog when searching, otherwise show top artists
+  // Filter artists: use catalog when searching, otherwise show top artists (dedup by canonical id)
   useEffect(() => {
     const q = artistSearch.trim().toLowerCase();
     if (!q) {
@@ -105,12 +109,21 @@ const MusicPreferencesScreen: React.FC = () => {
       return;
     }
     const src = artistsCatalog.length > 0 ? artistsCatalog : topArtists;
-    const filtered = src.filter(a => {
+    const filteredRaw = src.filter(a => {
       const inName = a.name?.toLowerCase().includes(q);
       const inAliases = (a.aliases || []).some((al: string) => al.toLowerCase().includes(q));
       return inName || inAliases;
-    }).slice(0, 50);
-    setFilteredArtists(filtered);
+    });
+    const seen = new Set<string>();
+    const out: Artist[] = [];
+    for (const a of filteredRaw) {
+      if (!seen.has(a.id)) {
+        seen.add(a.id);
+        out.push(a);
+      }
+      if (out.length >= 50) break;
+    }
+    setFilteredArtists(out);
   }, [artistSearch, topArtists, artistsCatalog]);
 
   useEffect(() => {
@@ -136,19 +149,23 @@ const MusicPreferencesScreen: React.FC = () => {
     setFilteredSongs(deduped);
   }, [songSearch, songs, songsCatalog]);
 
-  const handleArtistSelect = (artist: any) => {
-    if (selectedArtists.find(a => a.id === artist.id)) {
-      setSelectedArtists(selectedArtists.filter(a => a.id !== artist.id));
+  const handleArtistSelect = (artist: Artist) => {
+    const id = artist.id || artistId(artist.name);
+    const exists = selectedArtists.some(a => a.id === id);
+    if (exists) {
+      setSelectedArtists(prev => prev.filter(a => a.id !== id));
     } else if (selectedArtists.length < 3) {
-      setSelectedArtists([...selectedArtists, artist]);
+      setSelectedArtists(prev => [...prev, { id, name: artist.name, image: artist.image }]);
     }
   };
 
-  const handleSongSelect = (song: any) => {
-    if (selectedSongs.find(s => s.id === song.id)) {
-      setSelectedSongs(selectedSongs.filter(s => s.id !== song.id));
+  const handleSongSelect = (song: Song) => {
+    const id = String(song.id);
+    const exists = selectedSongs.some(s => s.id === id);
+    if (exists) {
+      setSelectedSongs(prev => prev.filter(s => s.id !== id));
     } else if (selectedSongs.length < 5) {
-      setSelectedSongs([...selectedSongs, song]);
+      setSelectedSongs(prev => [...prev, { id, title: song.title, artist: song.artist, image: song.image }]);
     }
   };
 
@@ -156,7 +173,9 @@ const MusicPreferencesScreen: React.FC = () => {
     if (selectedArtists.length === 3 && selectedSongs.length === 5) {
       setIsLoading(true);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      updatePreferences({ artists: selectedArtists, songs: selectedSongs });
+      const minimalArtists = selectedArtists.map(a => ({ id: a.id, name: a.name }));
+      const minimalSongs = selectedSongs.map(s => ({ id: s.id, title: s.title, artist: s.artist }));
+      updatePreferences({ artists: minimalArtists as any, songs: minimalSongs as any });
       setIsLoading(false);
       navigate('/generate');
     }
@@ -165,57 +184,57 @@ const MusicPreferencesScreen: React.FC = () => {
   const canContinue = selectedArtists.length === 3 && selectedSongs.length === 5;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4">
-        <h1 className="text-2xl font-bold text-gray-900 text-center">
+      <div className="bg-black border-b border-gray-800 px-4 py-4">
+        <h1 className="text-2xl font-bold text-white text-center">
           Music Preferences
         </h1>
-        <p className="text-gray-600 text-center mt-1">
+        <p className="text-gray-400 text-center mt-1">
           Choose your favorites to create your Rhythmoji
         </p>
       </div>
 
       {/* Progress Indicator */}
-      <div className="bg-white px-4 py-3 border-b border-gray-200">
+      <div className="bg-black px-4 py-3 border-b border-gray-800">
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-              selectedArtists.length === 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+              selectedArtists.length === 3 ? 'bg-green-500 text-black' : 'bg-gray-800 text-gray-300'
             }`}>
               {selectedArtists.length === 3 ? <Check className="w-4 h-4" /> : '1'}
             </div>
-            <span className="text-gray-700">Artists ({selectedArtists.length}/3)</span>
+            <span className="text-gray-300">Artists ({selectedArtists.length}/3)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-              selectedSongs.length === 5 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+              selectedSongs.length === 5 ? 'bg-green-500 text-black' : 'bg-gray-800 text-gray-300'
             }`}>
               {selectedSongs.length === 5 ? <Check className="w-4 h-4" /> : '2'}
             </div>
-            <span className="text-gray-700">Songs ({selectedSongs.length}/5)</span>
+            <span className="text-gray-300">Songs ({selectedSongs.length}/5)</span>
           </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-hidden">
         {/* Artists Section */}
-        <div className="h-1/2 bg-white border-b border-gray-200">
-          <div className="p-4 border-b border-gray-100">
+        <div className="h-1/2 bg-black border-b border-gray-800">
+          <div className="p-4 border-b border-gray-800">
             <div className="flex items-center gap-2 mb-3">
-              <User className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">
+              <User className="w-5 h-5 text-gray-300" />
+              <h2 className="text-lg font-semibold text-white">
                 Top 3 Favorite Artists
               </h2>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="text"
                 placeholder="Search artists..."
                 value={artistSearch}
                 onChange={(e) => setArtistSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-2 border border-gray-700 rounded-lg bg-gray-900 text-white placeholder:text-gray-500 focus:border-green-500 focus:outline-none"
               />
             </div>
           </div>
@@ -223,23 +242,22 @@ const MusicPreferencesScreen: React.FC = () => {
           <div className="p-4 h-full overflow-y-hidden overflow-x-auto">
             <div className="flex gap-3 pr-4 snap-x snap-mandatory">
               {filteredArtists.map((artist) => {
-                const isSelected = selectedArtists.find(a => a.id === artist.id);
-                const canSelect = selectedArtists.length < 3;
-                // image fallback: if artist.image missing, try first song that mentions this artist
+                const selected = selectedArtists.some(a => a.id === artist.id);
+                const canSelect = selectedArtists.length < 3 || selected;
                 const imgSrc = artist.image || '/placeholder-artist.svg';
                 return (
                   <div
                     key={artist.id}
-                    onClick={() => handleArtistSelect(artist)}
+                    onClick={() => canSelect && handleArtistSelect(artist)}
                     className={`relative p-3 rounded-lg border cursor-pointer transition-all snap-start min-w-[120px] ${
-                      isSelected 
-                        ? 'border-green-500 bg-green-50' 
+                      selected
+                        ? 'border-green-500 bg-green-50'
                         : canSelect
                           ? 'border-gray-200 bg-white hover:border-gray-300'
                           : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
                     }`}
                   >
-                    {isSelected && (
+                    {selected && (
                       <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
                       </div>
@@ -249,8 +267,7 @@ const MusicPreferencesScreen: React.FC = () => {
                       alt={artist.name}
                       className="w-24 h-24 object-cover rounded-lg mb-2"
                     />
-                    <h3 className="font-medium text-sm text-gray-900 truncate">{artist.name}</h3>
-                    {/* optional genre placeholder removed for simplicity */}
+                    <h3 className="font-medium text-sm text-white truncate">{artist.name}</h3>
                   </div>
                 );
               })}
@@ -259,22 +276,22 @@ const MusicPreferencesScreen: React.FC = () => {
         </div>
 
         {/* Songs Section */}
-        <div className="h-1/2 bg-gray-50">
-          <div className="p-4 border-b border-gray-200 bg-white">
+        <div className="h-1/2 bg-black">
+          <div className="p-4 border-b border-gray-800 bg-black">
             <div className="flex items-center gap-2 mb-3">
-              <Music className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">
+              <Music className="w-5 h-5 text-gray-300" />
+              <h2 className="text-lg font-semibold text-white">
                 Top 5 Favorite Songs
               </h2>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="text"
                 placeholder="Search songs..."
                 value={songSearch}
                 onChange={(e) => setSongSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-2 border border-gray-700 rounded-lg bg-gray-900 text-white placeholder:text-gray-500 focus:border-green-500 focus:outline-none"
               />
             </div>
           </div>
@@ -308,8 +325,8 @@ const MusicPreferencesScreen: React.FC = () => {
                       className="w-12 h-12 object-cover rounded-lg"
                     />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm text-gray-900 truncate">{song.title}</h3>
-                      <p className="text-xs text-gray-600 truncate">{song.artist}</p>
+                      <h3 className="font-medium text-sm text-white truncate">{song.title}</h3>
+                      <p className="text-xs text-gray-400 truncate">{song.artist}</p>
                     </div>
                     <span className="text-xs text-gray-500">{song.duration}</span>
                   </div>
@@ -320,29 +337,96 @@ const MusicPreferencesScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <button
-          onClick={handleContinue}
-          disabled={!canContinue || isLoading}
-          className={`w-full py-4 px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
-            canContinue && !isLoading
-              ? 'bg-green-500 text-white hover:bg-green-600'
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          {isLoading ? (
-            <>
-              <LoadingSpinner size="sm" />
-              <span>Processing...</span>
-            </>
-          ) : (
-            <>
-              <span>Generate My Rhythmoji</span>
-              <ArrowRight className="w-5 h-5" />
-            </>
-          )}
-        </button>
+      {/* Sticky Your Taste Panel */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md border-t border-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Your Taste</h3>
+            <span className="text-xs text-gray-400">{selectedArtists.length}/3 artists • {selectedSongs.length}/5 songs</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Selected Artists (3 slots) */}
+            <div>
+              <div className="text-xs text-gray-400 mb-2">Artists</div>
+              <div className="grid grid-cols-3 gap-2">
+                {[0,1,2].map((i) => {
+                  const a = selectedArtists[i];
+                  return (
+                    <div key={i} className={`h-16 rounded-lg border flex items-center justify-center relative ${a ? 'border-green-500 bg-green-500/10' : 'border-gray-800 bg-gray-900'}`}>
+                      {a ? (
+                        <>
+                          <button
+                            onClick={() => handleArtistSelect(a)}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow"
+                            aria-label={`Remove ${a.name}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <span className="px-2 text-sm truncate">{a.name}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500">Empty</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selected Songs (5 slots) */}
+            <div>
+              <div className="text-xs text-gray-400 mb-2">Songs</div>
+              <div className="grid grid-cols-5 gap-2">
+                {[0,1,2,3,4].map((i) => {
+                  const s = selectedSongs[i];
+                  return (
+                    <div key={i} className={`h-16 rounded-lg border flex items-center justify-center relative ${s ? 'border-green-500 bg-green-500/10' : 'border-gray-800 bg-gray-900'}`}>
+                      {s ? (
+                        <>
+                          <button
+                            onClick={() => handleSongSelect(s)}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow"
+                            aria-label={`Remove ${s.title}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <span className="px-2 text-xs truncate text-center">{s.title}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500">Empty</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <button
+              onClick={handleContinue}
+              disabled={!canContinue || isLoading}
+              className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                canContinue && !isLoading
+                  ? 'bg-green-500 text-black hover:bg-green-400'
+                  : 'bg-gray-800 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue</span>
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
