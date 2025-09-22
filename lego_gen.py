@@ -1,5 +1,5 @@
 from openai import OpenAI
-import base64, os, uuid, json
+import base64, os, uuid, json, tempfile
 import requests
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -85,46 +85,139 @@ def build_prompt(artists, songs, animal=None):
     )
     return guidance + context
 
-def generate_rhythmoji(base_image_path, artists, songs, animal=None):
-    """
-    Generate from prompt using DALL·E 3 for variety (no base edit). We still accept base_image_path for future use.
-    """
-    os.makedirs("rhythmojis", exist_ok=True)
-    prompt = build_prompt(artists, songs, animal=animal)
+def _save_result_image(image_data, out_path):
+    if getattr(image_data, 'b64_json', None):
+        with open(out_path, "wb") as f:
+            f.write(base64.b64decode(image_data.b64_json))
+        return True
+    if getattr(image_data, 'url', None):
+        resp = requests.get(image_data.url)
+        resp.raise_for_status()
+        with open(out_path, "wb") as f:
+            f.write(resp.content)
+        return True
+    return False
+
+def _edit_step(input_path, prompt, mask_path=None):
+    """Run a single images.edit step; returns path to new temp file or None on failure."""
     try:
-        # Use DALL·E 3 generation; higher creativity via vivid style
-        result = client.images.generate(
-            model=os.getenv("OPENAI_IMAGE_MODEL", "dall-e-3"),
+        files = {
+            'image': open(input_path, 'rb')
+        }
+        if mask_path and os.path.exists(mask_path):
+            files['mask'] = open(mask_path, 'rb')
+
+        result = client.images.edit(
+            model=os.getenv("OPENAI_EDIT_MODEL", "gpt-image-1"),
             prompt=prompt,
+            image=files.get('image'),
+            mask=files.get('mask'),
             size="1024x1024",
-            quality="hd",  # 'standard' or 'hd' are valid
-            style="vivid",
             response_format="b64_json",
         )
-
-        if result.data and len(result.data) > 0:
-            image_data = result.data[0]
-            out_name = f"lego_{uuid.uuid4().hex}.png"
-            output_filename = os.path.join("rhythmojis", out_name)
-
-            if getattr(image_data, 'b64_json', None):
-                with open(output_filename, "wb") as f:
-                    f.write(base64.b64decode(image_data.b64_json))
-            elif getattr(image_data, 'url', None):
-                response = requests.get(image_data.url)
-                response.raise_for_status()
-                with open(output_filename, "wb") as f:
-                    f.write(response.content)
-            else:
-                return None, None
-
-            return output_filename, f"/rhythmojis/{out_name}"
-        else:
-            return None, None
+        if not result.data:
+            return None
+        image_data = result.data[0]
+        out_tmp = os.path.join(tempfile.gettempdir(), f"rhythm_{uuid.uuid4().hex}.png")
+        ok = _save_result_image(image_data, out_tmp)
+        return out_tmp if ok else None
     except Exception as e:
-        print(f"Error during API call: {e}")
-        print(f"Error type: {type(e)}")
-        return None, None
+        print("Edit step failed:", e)
+        return None
+
+def _categorize_fashion(items):
+    tops_kw = ["jacket","bomber","hoodie","tee","t-shirt","shirt","sweater","coat","blazer","cardigan","vest","parka"]
+    bottoms_kw = ["jeans","pants","trouser","cargos","cargo","khakis","skirt","shorts"]
+    shoes_kw = ["boot","boots","sneaker","sneakers","shoe","loafers","loafer","heel","heels","jordan","adidas","nike","timberland","doc martens","dr. martens"]
+    accessories_kw = ["hat","cap","beanie","glasses","sunglasses","chain","belt","watch","scarf"]
+
+    def has_kw(text, kws):
+        t = text.lower()
+        return any(k in t for k in kws)
+
+    top = bottom = shoe = accessory = None
+    for it in items:
+        if not top and has_kw(it, tops_kw): top = it
+        elif not bottom and has_kw(it, bottoms_kw): bottom = it
+        elif not shoe and has_kw(it, shoes_kw): shoe = it
+        elif not accessory and has_kw(it, accessories_kw): accessory = it
+    # Fill fallbacks
+    if not top and items: top = items[0]
+    if not bottom and len(items) > 1: bottom = items[1]
+    if not shoe and len(items) > 2: shoe = items[2]
+    return top, bottom, shoe, accessory
+
+def generate_rhythmoji(base_image_path, artists, songs, animal=None):
+    """
+    Multi-step edit pipeline with masks to minimize hallucination.
+    Expected masks (optional): base_pngs/masks/head.png, torso.png, legs.png, accessory.png
+    """
+    os.makedirs("rhythmojis", exist_ok=True)
+    # Decide animal and fashion via LLM
+    chosen_animal, fashion = choose_animal_and_fashion(artists, songs)
+    animal_txt = (animal or chosen_animal).strip()
+    top, bottom, shoe, accessory = _categorize_fashion(fashion)
+
+    # Masks
+    masks_dir = os.getenv("MASKS_DIR", "base_pngs/masks")
+    head_mask = os.path.join(masks_dir, "head.png")
+    torso_mask = os.path.join(masks_dir, "torso.png")
+    legs_mask = os.path.join(masks_dir, "legs.png")
+    acc_mask = os.path.join(masks_dir, "accessory.png")
+
+    current = base_image_path
+
+    # Step 1: Animal head swap
+    head_prompt = (
+        f"Replace ONLY the head with a LEGO-style {animal_txt} head; keep minifig proportions, studs. "
+        "Do not touch torso, arms, legs, or background. Straight-on pose, LEGO realism, neutral background."
+    )
+    if os.path.exists(head_mask):
+        out = _edit_step(current, head_prompt, head_mask)
+        current = out or current
+
+    # Step 2: Torso/top
+    if top:
+        torso_prompt = (
+            f"Apply a {top} as the upper outfit, adapted to LEGO minifigure styling (prints/shapes). "
+            "Only modify torso/arms region. Keep head as-is, keep legs/feet unchanged. LEGO realism."
+        )
+        if os.path.exists(torso_mask):
+            out = _edit_step(current, torso_prompt, torso_mask)
+            current = out or current
+
+    # Step 3: Legs/feet
+    legs_desc = ", ".join([x for x in [bottom, shoe] if x])
+    if legs_desc:
+        legs_prompt = (
+            f"Update legs/feet with: {legs_desc}, adapted to LEGO. Only modify legs/feet. Keep head/torso unchanged. LEGO realism."
+        )
+        if os.path.exists(legs_mask):
+            out = _edit_step(current, legs_prompt, legs_mask)
+            current = out or current
+
+    # Step 4: Accessory (optional)
+    if accessory and os.path.exists(acc_mask):
+        acc_prompt = (
+            f"Add a subtle {accessory} as accessory, adapted to LEGO. Only modify the accessory region defined by the mask."
+        )
+        out = _edit_step(current, acc_prompt, acc_mask)
+        current = out or current
+
+    # Save final
+    out_name = f"lego_{uuid.uuid4().hex}.png"
+    output_filename = os.path.join("rhythmojis", out_name)
+    # If current is still base, force a single overall enhancement to ensure an output asset
+    if current == base_image_path:
+        enhance_prompt = (
+            f"Create a LEGO-style portrait with a {animal_txt} head and cohesive outfit inspired by the user's music. Maintain LEGO realism."
+        )
+        out = _edit_step(current, enhance_prompt, None)
+        current = out or current
+    # Copy final temp to output file
+    with open(current, 'rb') as src, open(output_filename, 'wb') as dst:
+        dst.write(src.read())
+    return output_filename, f"/rhythmojis/{out_name}"
 
 
 # Minimal Flask API for the frontend
