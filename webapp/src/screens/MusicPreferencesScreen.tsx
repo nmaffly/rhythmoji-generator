@@ -115,16 +115,25 @@ const MusicPreferencesScreen: React.FC = () => {
 
   useEffect(() => {
     const q = songSearch.trim().toLowerCase();
-    if (!q) {
-      setFilteredSongs(songs);
-      return;
+    let base = songs;
+    if (q) {
+      const src = songsCatalog.length > 0 ? songsCatalog : songs;
+      base = src.filter(song =>
+        (song.title || '').toLowerCase().includes(q) ||
+        (song.artist || '').toLowerCase().includes(q)
+      ).slice(0, 200);
     }
-    const src = songsCatalog.length > 0 ? songsCatalog : songs;
-    const filtered = src.filter(song =>
-      (song.title || '').toLowerCase().includes(q) ||
-      (song.artist || '').toLowerCase().includes(q)
-    ).slice(0, 200);
-    setFilteredSongs(filtered);
+    // De-duplicate by id (then by title+artist as a fallback)
+    const seen = new Set<string>();
+    const deduped: Song[] = [];
+    for (const s of base) {
+      const key = s.id || `${(s.title||'').toLowerCase()}::${(s.artist||'').toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(s);
+      }
+    }
+    setFilteredSongs(deduped);
   }, [songSearch, songs, songsCatalog]);
 
   const handleArtistSelect = (artist: any) => {
@@ -217,9 +226,7 @@ const MusicPreferencesScreen: React.FC = () => {
                 const isSelected = selectedArtists.find(a => a.id === artist.id);
                 const canSelect = selectedArtists.length < 3;
                 // image fallback: if artist.image missing, try first song that mentions this artist
-                const lower = artist.name?.toLowerCase() || '';
-                const songMatch = songs.find(s => (s.artist || '').toLowerCase().includes(lower));
-                const imgSrc = artist.image || songMatch?.image || '/placeholder-artist.svg';
+                const imgSrc = artist.image || '/placeholder-artist.svg';
                 return (
                   <div
                     key={artist.id}

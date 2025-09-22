@@ -36,6 +36,20 @@ function commonsFromFileName(fileName, width = 256) {
 
 async function wikidataImageForName(name) {
   try {
+    // Prefer exact-label match via WDQS, limited to humans or musical groups with relevant occupations
+    const q = `SELECT ?file WHERE {\n  BIND(${JSON.stringify(name)}@en AS ?targetLabel)\n  {\n    ?item rdfs:label ?targetLabel.\n    ?item wdt:P31/wdt:P279* wd:Q5.  # human\n    ?item wdt:P106 ?occ. ?occ rdfs:label ?occLabel FILTER(LANG(?occLabel)='en').\n    FILTER(REGEX(?occLabel, '(singer|musician|rapper|DJ|disc jockey|singer-songwriter|music producer|composer)', 'i')).\n  } UNION {\n    ?item rdfs:label ?targetLabel.\n    ?item wdt:P31/wdt:P279* wd:Q215380.  # musical group\n  }\n  ?item wdt:P18 ?file.\n} LIMIT 1`;
+    const url = new URL('https://query.wikidata.org/sparql');
+    url.searchParams.set('query', q);
+    url.searchParams.set('format', 'json');
+    const res = await fetch(url.toString(), { headers: { 'Accept': 'application/sparql-results+json', 'User-Agent': 'Rhythmoji PrefData/1.0' } });
+    if (res.ok) {
+      const json = await res.json();
+      const file = json?.results?.bindings?.[0]?.file?.value;
+      if (file) return commonsFromFileName(file.split('/').pop());
+    }
+  } catch {}
+  try {
+    // Fallback: wbsearchentities then wbgetentities for P18
     const searchUrl = new URL('https://www.wikidata.org/w/api.php');
     searchUrl.searchParams.set('action', 'wbsearchentities');
     searchUrl.searchParams.set('search', name);
@@ -62,9 +76,10 @@ async function wikidataImageForName(name) {
 async function enrichTopArtistImagesWikidata(artists) {
   const enriched = [];
   for (const a of artists) {
-    if (a.image_url) { enriched.push(a); continue; }
-    const img = await wikidataImageForName(a.name);
-    enriched.push({ ...a, image_url: img || null });
+    const name = a.name || '';
+    const eligible = name.length >= 3 && /\s/.test(name); // avoid 1-2 char or single-token ambiguous names
+    const img = eligible ? await wikidataImageForName(name) : null;
+    enriched.push({ ...a, image_url: img || a.image_url || null });
     // brief pause to be polite
     await new Promise(r => setTimeout(r, 300));
   }
@@ -112,19 +127,26 @@ async function updateAppleTopSongs() {
   await fs.writeFile(path.join(OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs, null, 2));
   await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs));
 
-  // Derive artists from song credits, de-duplicate, preserve order
-  const seen = new Set();
-  const allArtists = [];
+  // Derive artists from song credits, de-duplicate, preserve order, bind first song artwork per artist
+  const artistOrder = [];
+  const displayName = new Map(); // norm -> display string
+  const artistImage = new Map(); // norm -> image url
   for (const s of songs) {
     const credits = splitArtistCredits(s.artist);
     for (const c of credits) {
-      const norm = normalizeArtistName(c).toLowerCase();
-      if (norm && !seen.has(norm)) {
-        seen.add(norm);
-        allArtists.push({ name: normalizeArtistName(c), image_url: s.image || null });
+      const nameDisp = normalizeArtistName(c);
+      const norm = nameDisp.toLowerCase();
+      if (!norm) continue;
+      if (!displayName.has(norm)) {
+        displayName.set(norm, nameDisp);
+        artistOrder.push(norm);
+      }
+      if (!artistImage.has(norm) && s.image) {
+        artistImage.set(norm, s.image);
       }
     }
   }
+  const allArtists = artistOrder.map(norm => ({ name: displayName.get(norm), image_url: artistImage.get(norm) || null }));
 
   // Top 10 unique artists; then try to enrich missing images from Wikidata
   let artists10 = allArtists.slice(0, 10);

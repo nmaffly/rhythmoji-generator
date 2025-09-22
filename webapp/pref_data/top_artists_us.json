@@ -1,11 +1,11 @@
 {
   "source": "apple_music_rss",
   "country": "us",
-  "updated_at": "2025-09-22T03:36:38.035Z",
+  "updated_at": "2025-09-22T03:55:17.816Z",
   "artists": [
     {
       "name": "Cardi B",
-      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/c1/5e/19/c15e1941-19f3-bebd-6b97-3161ee075351/075679604828.jpg/200x200bb.jpg"
+      "image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cardi%20B%202021%2002.jpg?width=256"
     },
     {
       "name": "HUNTR",
@@ -21,7 +21,7 @@
     },
     {
       "name": "AUDREY NUNA",
-      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
+      "image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Audrey%20Nuna%20performing%20at%20Rapbeat%20Festival%202022%20cropped.jpg?width=256"
     },
     {
       "name": "REI AMI",
