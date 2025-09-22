@@ -71,7 +71,8 @@ def generate_style_plan(genres, artists, temperature=None, top_p=None):
     sys = (
         "Output ONLY strict JSON with keys: animal, upper, lower, shoes, accessory. "
         "animal: one animal head (unrelated to genres). "
-        "upper/lower/shoes/accessory: concise brand-inspired items with 1–2 vivid adjectives (e.g., 'oversized white button-down', 'Nike Air Max-style sneakers'), no logos/text, no trademark names in isolation; describe style rather than quoting brand names; 3–8 words each."
+        "upper/lower/shoes/accessory: concise items that include explicit brand or model names when helpful (e.g., Levi’s 501 jeans, Jordan 1 high-tops, Prada nylon shoulder bag, Carhartt chore jacket) with 1–2 vivid adjectives; 3–8 words each. "
+        "Brand names are allowed in text, but do not include any on-image text/logos; avoid quotation marks and extra prose."
     )
     user = {"genres": (genres or [])[:5], "artists": (artists or [])[:5]}
 
