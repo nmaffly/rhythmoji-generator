@@ -1,159 +1,47 @@
 {
   "source": "apple_music_rss",
   "country": "us",
-  "updated_at": "2025-09-22T03:01:38.375Z",
+  "updated_at": "2025-09-22T03:19:07.123Z",
   "artists": [
     {
       "name": "Cardi B",
-      "image_url": null
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/c1/5e/19/c15e1941-19f3-bebd-6b97-3161ee075351/075679604828.jpg/200x200bb.jpg"
     },
     {
-      "name": "HUNTR/X, EJAE, AUDREY NUNA, REI AMI & KPop Demon Hunters Cast",
-      "image_url": null
+      "name": "HUNTR",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "Saja Boys, Andrew Choi, Neckwav, Danny Chung, Kevin Woo, samUIL Lee & KPop Demon Hunters Cast",
-      "image_url": null
+      "name": "X",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "Kehlani",
-      "image_url": null
+      "name": "EJAE",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "Morgan Wallen & Tate McRae",
-      "image_url": null
+      "name": "AUDREY NUNA",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "Gunna",
-      "image_url": null
+      "name": "REI AMI",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "Morgan Wallen",
-      "image_url": null
+      "name": "KPop Demon Hunters Cast",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "YoungBoy Never Broke Again",
-      "image_url": null
+      "name": "Saja Boys",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "Alex Warren",
-      "image_url": null
+      "name": "Andrew Choi",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     },
     {
-      "name": "Lil Baby",
-      "image_url": null
-    },
-    {
-      "name": "Mariah the Scientist",
-      "image_url": null
-    },
-    {
-      "name": "Chris Brown",
-      "image_url": null
-    },
-    {
-      "name": "PARTYNEXTDOOR & Drake",
-      "image_url": null
-    },
-    {
-      "name": "Post Malone",
-      "image_url": null
-    },
-    {
-      "name": "Justin Bieber",
-      "image_url": null
-    },
-    {
-      "name": "SZA",
-      "image_url": null
-    },
-    {
-      "name": "d4vd",
-      "image_url": null
-    },
-    {
-      "name": "Sabrina Carpenter",
-      "image_url": null
-    },
-    {
-      "name": "Rumi, JINU, EJAE, Andrew Choi & KPop Demon Hunters Cast",
-      "image_url": null
-    },
-    {
-      "name": "Mariah the Scientist & Kali Uchis",
-      "image_url": null
-    },
-    {
-      "name": "Future",
-      "image_url": null
-    },
-    {
-      "name": "Kendrick Lamar",
-      "image_url": null
-    },
-    {
-      "name": "Olivia Dean",
-      "image_url": null
-    },
-    {
-      "name": "Metro Boomin, Quavo, Breskii & YKNIECE",
-      "image_url": null
-    },
-    {
-      "name": "BigXthaPlug & Ella Langley",
-      "image_url": null
-    },
-    {
-      "name": "Drake",
-      "image_url": null
-    },
-    {
-      "name": "Shaboozey",
-      "image_url": null
-    },
-    {
-      "name": "Kendrick Lamar & SZA",
-      "image_url": null
-    },
-    {
-      "name": "Future, Metro Boomin & Kendrick Lamar",
-      "image_url": null
-    },
-    {
-      "name": "Teddy Swims",
-      "image_url": null
-    },
-    {
-      "name": "Loe Shimmy & Don Toliver",
-      "image_url": null
-    },
-    {
-      "name": "Bad Bunny",
-      "image_url": null
-    },
-    {
-      "name": "Summer Walker",
-      "image_url": null
-    },
-    {
-      "name": "Fuerza Regida",
-      "image_url": null
-    },
-    {
-      "name": "Benson Boone",
-      "image_url": null
-    },
-    {
-      "name": "Travis Scott",
-      "image_url": null
-    },
-    {
-      "name": "sombr",
-      "image_url": null
-    },
-    {
-      "name": "Chris Stapleton",
-      "image_url": null
+      "name": "Neckwav",
+      "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e1/15/42/e1154273-8ecd-5702-e6e6-597f28001681/25UMGIM82363.rgb.jpg/200x200bb.jpg"
     }
   ]
 }

@@ -28,6 +28,33 @@ async function fetchJson(url, opts = {}) {
   return res.json();
 }
 
+function splitArtistCredits(raw) {
+  if (!raw) return [];
+  let s = String(raw);
+  // Remove common featuring patterns in parentheses
+  s = s.replace(/\(.*?feat\.?[^)]*\)/gi, '');
+  // Normalize separators to a pipe
+  s = s
+    .replace(/\s+&\s+/g, '|')
+    .replace(/\s*,\s*/g, '|')
+    .replace(/\s+x\s+/gi, '|')
+    .replace(/\s+X\s+/g, '|')
+    .replace(/\s+with\s+/gi, '|')
+    .replace(/\s+and\s+/gi, '|')
+    .replace(/\s*feat\.?\s*/gi, '|')
+    .replace(/\s*featuring\s*/gi, '|')
+    .replace(/\//g, '|');
+  return s
+    .split('|')
+    .map(t => t.trim())
+    .filter(Boolean)
+    .map(t => t.replace(/^[-–]+/, '').replace(/[-–]+$/, '').trim());
+}
+
+function normalizeArtistName(name) {
+  return name.trim().replace(/\s+/g, ' ');
+}
+
 async function updateAppleTopSongs() {
   const data = await fetchJson(APPLE_URL);
   const results = data?.feed?.results || [];
@@ -42,19 +69,30 @@ async function updateAppleTopSongs() {
   await fs.writeFile(path.join(OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs, null, 2));
   await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'top_songs_us.json'), JSON.stringify(topSongs));
 
-  // Derive top artists list (names only for now; images enriched later)
+  // Derive artists from song credits, de-duplicate, preserve order
   const seen = new Set();
-  const artists = [];
+  const allArtists = [];
   for (const s of songs) {
-    const key = s.artist?.toLowerCase();
-    if (key && !seen.has(key)) {
-      seen.add(key);
-      artists.push({ name: s.artist, image_url: null });
+    const credits = splitArtistCredits(s.artist);
+    for (const c of credits) {
+      const norm = normalizeArtistName(c).toLowerCase();
+      if (norm && !seen.has(norm)) {
+        seen.add(norm);
+        allArtists.push({ name: normalizeArtistName(c), image_url: s.image || null });
+      }
     }
   }
-  const topArtists = { source: 'apple_music_rss', country: 'us', updated_at: nowIso(), artists };
+
+  // Top 10 unique artists
+  const artists10 = allArtists.slice(0, 10);
+  const topArtists = { source: 'apple_music_rss', country: 'us', updated_at: nowIso(), artists: artists10 };
   await fs.writeFile(path.join(OUT_DIR, 'top_artists_us.json'), JSON.stringify(topArtists, null, 2));
   await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'top_artists_us.json'), JSON.stringify(topArtists));
+
+  // Lightweight catalog for search (first 300 unique from feed)
+  const catalog = { source: 'apple_music_rss', updated_at: nowIso(), count: Math.min(allArtists.length, 300), artists: allArtists.slice(0, 300) };
+  await fs.writeFile(path.join(OUT_DIR, 'artists_catalog.json'), JSON.stringify(catalog, null, 2));
+  await fs.writeFile(path.join(PUBLIC_OUT_DIR, 'artists_catalog.json'), JSON.stringify(catalog));
 }
 
 function wikidataSparql(limit = 5000, offset = 0) {
