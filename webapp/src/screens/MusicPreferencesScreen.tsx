@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Search, Music, User, Check, X, ArrowRight } from 'lucide-react';
@@ -22,6 +22,27 @@ const MusicPreferencesScreen: React.FC = () => {
 
   const { updatePreferences } = useAuth();
   const navigate = useNavigate();
+
+  // Helper: robust JSON fetch with fallback to backend base
+  const fetchApiJson = async (relPath: string): Promise<any | null> => {
+    const candidates = [
+      relPath,
+      `${window.location.origin}${relPath}`,
+      `http://localhost:5001${relPath}`,
+    ];
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res || !res.ok) continue;
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.toLowerCase().includes('application/json')) continue;
+        return await res.json();
+      } catch (_) {
+        // try next candidate
+      }
+    }
+    return null;
+  };
 
   // Canonical artist ID (slug of name) to unify across sources
   const slug = (s: string) => s.toLowerCase().trim().replace(/\s+/g, '-');
@@ -126,6 +147,51 @@ const MusicPreferencesScreen: React.FC = () => {
     setFilteredArtists(out);
   }, [artistSearch, topArtists, artistsCatalog]);
 
+  // Remote artist search (free: MusicBrainz) as fallback when local results are sparse
+  const remoteTimer = useRef<number | null>(null);
+  useEffect(() => {
+    const q = artistSearch.trim();
+    if (remoteTimer.current) {
+      window.clearTimeout(remoteTimer.current);
+      remoteTimer.current = null;
+    }
+    if (!q || q.length < 2) return;
+    // Debounce 300ms
+    remoteTimer.current = window.setTimeout(async () => {
+      try {
+        // If local has plenty of results, skip remote
+        if (filteredArtists.length >= 20) return;
+        const endpointRel = `/api/search/artist?q=${encodeURIComponent(q)}&limit=25`;
+        const json = await fetchApiJson(endpointRel);
+        if (!json) return;
+        const items = (json?.artists || []).slice(0, 50) as any[];
+        const toArtist = (a: any): Artist => ({
+          id: artistId(a.name),
+          name: a.name,
+          image: a.image_url || undefined,
+          aliases: a.aliases || [],
+        });
+        const remote = items.map(toArtist);
+        // Merge with current filtered, de-dup by id
+        const merged: Artist[] = [];
+        const seen = new Set<string>();
+        for (const a of [...filteredArtists, ...remote]) {
+          const id = a.id || artistId(a.name);
+          if (!seen.has(id)) { seen.add(id); merged.push({ ...a, id }); }
+          if (merged.length >= 50) break;
+        }
+        setFilteredArtists(merged);
+      } catch {}
+    }, 300);
+    return () => {
+      if (remoteTimer.current) {
+        window.clearTimeout(remoteTimer.current);
+        remoteTimer.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artistSearch]);
+
   useEffect(() => {
     const q = songSearch.trim().toLowerCase();
     let base = songs;
@@ -148,6 +214,50 @@ const MusicPreferencesScreen: React.FC = () => {
     }
     setFilteredSongs(deduped);
   }, [songSearch, songs, songsCatalog]);
+
+  // Remote song search fallback via MusicBrainz when local results are sparse
+  const remoteSongTimer = useRef<number | null>(null);
+  useEffect(() => {
+    const q = songSearch.trim();
+    if (remoteSongTimer.current) {
+      window.clearTimeout(remoteSongTimer.current);
+      remoteSongTimer.current = null;
+    }
+    if (!q || q.length < 2) return;
+    remoteSongTimer.current = window.setTimeout(async () => {
+      try {
+        // If local already has plenty, skip
+        if (filteredSongs.length >= 50) return;
+        const endpointRel = `/api/search/song?q=${encodeURIComponent(q)}&limit=25`;
+        const json = await fetchApiJson(endpointRel);
+        if (!json) return;
+        const items = (json?.songs || []).slice(0, 100) as any[];
+        const toSong = (s: any): Song => ({
+          id: String(`${s.title}::${s.artist}`),
+          title: s.title,
+          artist: s.artist,
+          image: s.image_url || undefined,
+        });
+        const remote = items.map(toSong);
+        // Merge with current filtered, de-dup
+        const merged: Song[] = [];
+        const seen = new Set<string>();
+        for (const s of [...filteredSongs, ...remote]) {
+          const key = s.id || `${(s.title||'').toLowerCase()}::${(s.artist||'').toLowerCase()}`;
+          if (!seen.has(key)) { seen.add(key); merged.push(s); }
+          if (merged.length >= 200) break;
+        }
+        setFilteredSongs(merged);
+      } catch {}
+    }, 300);
+    return () => {
+      if (remoteSongTimer.current) {
+        window.clearTimeout(remoteSongTimer.current);
+        remoteSongTimer.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songSearch]);
 
   const handleArtistSelect = (artist: Artist) => {
     const id = artist.id || artistId(artist.name);
