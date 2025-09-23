@@ -5,6 +5,8 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 import time
+from rembg import remove
+from PIL import Image
 
 # Load environment
 load_dotenv(override=True)
@@ -74,7 +76,12 @@ def generate_style_plan(genres, artists, temperature=None, top_p=None):
     sys = (
         "Output ONLY strict JSON with keys: animal, upper, lower, shoes, accessory. "
         "animal: one animal head (unrelated to genres). "
-        "upper/lower/shoes/accessory: concise items that include explicit brand or model names when helpful (e.g., Levi’s 501 jeans, Jordan 1 high-tops, Prada nylon shoulder bag, Carhartt chore jacket) with 1–2 vivid adjectives; 3–8 words each. "
+        "Assign each clothing item to a different genre/artist from the provided list: "
+        "upper: choose clothing inspired by the first genre/artist (e.g., hip-hop → streetwear, rock → band tees, pop → trendy tops). "
+        "lower: choose clothing inspired by the second genre/artist (e.g., indie → vintage jeans, electronic → futuristic pants). "
+        "shoes: choose footwear inspired by the third genre/artist (e.g., punk → combat boots, R&B → designer sneakers). "
+        "accessory: choose accessoryfo inspired by the urth genre/artist (e.g., metal → chains, folk → vintage jewelry). "
+        "Include explicit brand or model names when helpful with 1–2 vivid adjectives; 3–8 words each. "
         "Brand names are allowed in text, but do not include any on-image text/logos; avoid quotation marks and extra prose."
     )
     user = {"genres": (genres or [])[:5], "artists": (artists or [])[:5]}
@@ -200,9 +207,23 @@ def generate_rhythmoji(base_image_path, plan):
         image_data = result.data[0]
 
         os.makedirs("rhythmojis", exist_ok=True)
-        out_path = f"rhythmojis/lego_{uuid.uuid4().hex}.png"
-        if not _save_result_image(image_data, out_path):
+        temp_path = f"rhythmojis/temp_{uuid.uuid4().hex}.png"
+        if not _save_result_image(image_data, temp_path):
             return None, None
+        
+        # Remove background
+        with open(temp_path, 'rb') as input_file:
+            input_data = input_file.read()
+            output_data = remove(input_data)
+        
+        # Save final image without background
+        out_path = f"rhythmojis/lego_{uuid.uuid4().hex}.png"
+        with open(out_path, 'wb') as output_file:
+            output_file.write(output_data)
+        
+        # Clean up temp file
+        os.remove(temp_path)
+        
         return out_path, f"/{out_path}"
     except Exception as e:
         print("Edit step failed:", e)
